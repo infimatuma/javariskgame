@@ -8,7 +8,7 @@ public class ClientData {
 	
 	@RequestMapping("/client-data")
 	public String index() {
-		return "Thank you for yout data!";
+		return "Thank you for your data!";
 	}
 	
 }

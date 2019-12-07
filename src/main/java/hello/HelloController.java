@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RestController
 public class HelloController {
 	
-	@RequestMapping("/")
+	@RequestMapping("/hll")
 	public String index() {
 		return "Welcome to Risk!";
 	}
