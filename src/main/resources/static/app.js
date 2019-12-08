@@ -19,6 +19,7 @@ function connect() {
     stompClient.connect({}, function (frame) {
         setConnected(true);
         console.log('Connected: ' + frame);
+        $("#helloFormId").show();
         stompClient.subscribe('/topic/greetings', function (greeting) {
             showGreeting(JSON.parse(greeting.body).content);
         });
@@ -58,7 +59,9 @@ function showAction(action, area) {
 
 
 $(function () {
+    $("#helloFormId").hide();
     $("#actionFormId").hide();
+
 
     $("form").on('submit', function (e) {
         e.preventDefault();
