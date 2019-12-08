@@ -38,3 +38,4 @@ gradle-app.setting
 /.gradle/
 /out/
 /.gradle/
+/.idea/
