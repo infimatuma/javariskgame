@@ -3,26 +3,35 @@ package hello;
 public class ActionMessage {
 
     private String action;
-    private Number area;
+    private String area;
+    private String targetArea;
+    private String playerId;
+    private Number units;
 
-    public ActionMessage(String action, Number area) {
+    public ActionMessage(String playerId, String action, String area, String targetArea, Number units) {
+        this.playerId = playerId;
         this.action = action;
         this.area = area;
+        this.targetArea = targetArea;
+        this.units = units;
     }
 
     public String getAction() {
         return action;
     }
 
-    public void setAction(String action) {
-        this.action = action;
-    }
-
-    public Number getArea() {
+    public String getArea() {
         return area;
     }
 
-    public void setArea(Number area) {
-        this.area = area;
+    public String getTargetArea() {
+        return targetArea;
+    }
+
+    public Number getUnits() {
+        return units;
+    }
+    public String getPlayerId() {
+        return playerId;
     }
 }

@@ -11,7 +11,7 @@ public class ActionsController {
     @MessageMapping("/do")
     @SendTo("/topic/actions")
     public Action action(ActionMessage message) throws Exception {
-        return new Action(message.getAction(), message.getArea());
+        return new Action( message.getPlayerId(), message.getAction(), message.getArea(), message.getTargetArea(), message.getUnits());
     }
 
 }
