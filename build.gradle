@@ -38,3 +38,8 @@ dependencies {
     testCompile("junit:junit")
 }
 
+jar {
+    into 'resources', {
+        from 'resources'
+    }
+}
