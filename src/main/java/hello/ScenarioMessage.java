@@ -4,13 +4,13 @@ import java.util.ArrayList;
 
 public class ScenarioMessage {
     String name;
-    ArrayList<GameScenatioArea> areas;
+    ArrayList<GameScenarioArea> areas;
 
-    public ArrayList<GameScenatioArea> getAreas() {
+    public ArrayList<GameScenarioArea> getAreas() {
         return areas;
     }
 
-    public void setAreas(ArrayList<GameScenatioArea> areas) {
+    public void setAreas(ArrayList<GameScenarioArea> areas) {
         this.areas = areas;
     }
 

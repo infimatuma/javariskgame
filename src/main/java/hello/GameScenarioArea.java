@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
-public class GameScenatioArea {
+public class GameScenarioArea {
     String x;
     String y;
     String str;
@@ -19,20 +19,20 @@ public class GameScenatioArea {
         String areaHashName = "SArea:"+scenario.getName()+":"+id;
         System.out.println("Save ["+areaHashName+"]");
 
-        scenario.jedis.hset(areaHashName, "x", x);
-        scenario.jedis.hset(areaHashName, "y", y);
-        scenario.jedis.hset(areaHashName, "str", str);
-        scenario.jedis.hset(areaHashName, "id", id);
-        scenario.jedis.hset(areaHashName, "color", color);
+        JedisConnection.getLink().hset(areaHashName, "x", x);
+        JedisConnection.getLink().hset(areaHashName, "y", y);
+        JedisConnection.getLink().hset(areaHashName, "str", str);
+        JedisConnection.getLink().hset(areaHashName, "id", id);
+        JedisConnection.getLink().hset(areaHashName, "color", color);
 
         String setName = "SAreaLinks:"+scenario.getName()+":"+id;
         System.out.println("Save ["+setName+"]");
-        scenario.jedis.del(setName);
+        JedisConnection.getLink().del(setName);
         if(links != null){
             Iterator linksIterator = links.iterator();
             while (linksIterator.hasNext()) {
                 Number linkId = (Number) linksIterator.next();
-                scenario.jedis.sadd(setName, String.valueOf(linkId));
+                JedisConnection.getLink().sadd(setName, String.valueOf(linkId));
             }
         }
     }
@@ -40,16 +40,16 @@ public class GameScenatioArea {
     public void load(){
         String areaHashName = "SArea:"+scenario.getName()+":"+id;
 
-        x = scenario.jedis.hget(areaHashName, "x");
-        y = scenario.jedis.hget(areaHashName, "y");
-        str = scenario.jedis.hget(areaHashName, "str");
-        id = scenario.jedis.hget(areaHashName, "id");
-        color = scenario.jedis.hget(areaHashName, "color");
+        x = JedisConnection.getLink().hget(areaHashName, "x");
+        y = JedisConnection.getLink().hget(areaHashName, "y");
+        str = JedisConnection.getLink().hget(areaHashName, "str");
+        id = JedisConnection.getLink().hget(areaHashName, "id");
+        color = JedisConnection.getLink().hget(areaHashName, "color");
 
         String setName = "SAreaLinks:"+scenario.getName()+":"+id;
         System.out.println("Get ["+setName+"]");
 
-        Set linksInRedis = scenario.jedis.smembers(setName);
+        Set linksInRedis = JedisConnection.getLink().smembers(setName);
         links = new ArrayList<Number>();
         if(linksInRedis!=null && linksInRedis.size()>0) {
             Iterator setIterator = linksInRedis.iterator();
