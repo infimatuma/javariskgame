@@ -15,8 +15,9 @@ public class GreetingController {
     @MessageMapping("/hello")
     @SendTo("/topic/greetings")
     public Greeting greeting(HelloMessage message) throws Exception {
+        Game game = new Game();
 
-        return new Greeting("Hello, " + HtmlUtils.htmlEscape(message.getName()) + "!", null);
+        return game.handleGreeting(message);
     }
 
 }

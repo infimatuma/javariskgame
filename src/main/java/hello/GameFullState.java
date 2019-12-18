@@ -3,6 +3,10 @@ package hello;
 import java.util.ArrayList;
 
 public class GameFullState {
+
+    public GameFullState() {
+    }
+
     public ArrayList<GameArea> getAreas() {
         return areas;
     }
@@ -13,4 +17,7 @@ public class GameFullState {
 
     ArrayList<GameArea> areas;
 
+    public void createFromGame(Game game) {
+        
+    }
 }

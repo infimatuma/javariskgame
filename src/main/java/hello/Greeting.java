@@ -3,25 +3,24 @@ package hello;
 public class Greeting {
 
     private String content;
-    private GameFullState gameState;
+    private Game game;
 
     public Greeting() {
     }
 
-    public Greeting(String content, GameFullState gameState) {
+    public Greeting(String content) {
         this.content = content;
-        this.gameState = gameState;
     }
 
     public String getContent() {
         return content;
     }
 
-    public GameFullState getGameState() {
-        return gameState;
+    public Game getGame() {
+        return game;
     }
 
-    public void setGameState(GameFullState gameState) {
-        this.gameState = gameState;
+    public void setGame(Game game) {
+        this.game = game;
     }
 }

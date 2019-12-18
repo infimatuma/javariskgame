@@ -1,6 +1,8 @@
 package hello;
 
 
+import org.springframework.web.util.HtmlUtils;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.stream.IntStream;
@@ -40,6 +42,7 @@ public class Game {
 
     /* makes sure we have a current game state */
     public Game initialize(){
+        allColors = new ArrayList<>();
         allColors.add("red");
         allColors.add("green");
         allColors.add("grey");
@@ -97,10 +100,18 @@ public class Game {
 
             try {
 
-                String gameKey = "risk.scenario:" + id;
+                String gameKey = "risk.game:" + id;
                 String gameAreasCnt = JedisConnection.getLink().hget(gameKey, "numberOfAreas");
 
                 Number AreasSize = Integer.valueOf(gameAreasCnt);
+
+                IntStream.range(0, AreasSize.intValue()).forEach(i -> {
+                    GameArea nextArea = new GameArea(String.valueOf(i), this);
+                    areas.add(nextArea.load());
+                });
+
+                Number PlayersSize = Integer.valueOf(gameAreasCnt);
+
 
                 IntStream.range(0, AreasSize.intValue()).forEach(i -> {
                     GameArea nextArea = new GameArea(String.valueOf(i), this);
@@ -135,7 +146,7 @@ public class Game {
                 scenarioAreas.forEach(this::createAreaFromScenarioArea);
 
                 if (playerNumberOneId != null) {
-                    GamePlayer playerNumberOne = new GamePlayer(playerNumberOneId, this);
+                    GamePlayer playerNumberOne = new GamePlayer(playerNumberOneId, "0", this);
                     players.add(playerNumberOne.pickColor());
                 }
 
@@ -156,11 +167,6 @@ public class Game {
 
     public String getFreeColor(){
         return allColors.get(players.size());
-    }
-
-    private Game applyEffects(ArrayList<GameEffect> effects){
-        /* not sure if this is needed */
-        return this;
     }
 
     private Game setIdByPLayer(String playerId) {
@@ -184,6 +190,16 @@ public class Game {
         return this;
     }
 
+    private String getNewPlayerId(){
+        String newID;
+        if(players != null){
+            newID = String.valueOf(players.size());
+        }
+        else{
+            newID = "0";
+        }
+        return newID;
+    }
     /* Try to find a game with free slot and make it active game if one exists */
     private void findSlotForPlayer(String playerId) {
         /* Lock game pool to avoid bad things */
@@ -193,7 +209,7 @@ public class Game {
                 id = greatGameId;
                 if(lock()){
                     load(); /* load everything-game */
-                    GamePlayer nextPlayer = new GamePlayer(playerId, this);
+                    GamePlayer nextPlayer = new GamePlayer(playerId, getNewPlayerId(), this);
                     players.add(nextPlayer.pickColor());
 
                     savePlayers(); /* save game players while pool is locked */
@@ -215,7 +231,29 @@ public class Game {
         /* redis.setnx */
     }
 
+    private Game applyEffects(ArrayList<GameEffect> effects){
+        /* not sure if this is needed */
+        return this;
+    }
 
+    public Greeting handleGreeting(HelloMessage message){
+        // create basic Action out of message
+        Greeting resolution = new Greeting("Hello, " + HtmlUtils.htmlEscape(message.getName()) + "!");
+
+        initialize().setIdByPLayer(message.getName());
+
+        if(id != null) {
+            /* should have id set now */
+            /* lock the game before we load it */
+            if(lock()){
+                load(); // Load current game.
+                resolution.setGame(this);
+                unlock();
+            }
+        }
+        /* return complete Greeting (should be broadcasted in controller) - everybody wll have fresh game state */
+        return resolution;
+    }
     public Action handleAction(ActionMessage message){
         // create basic Action out of message
         Action resolution = new Action(message.getPlayerId(), message.getAction(), message.getArea(), message.getTargetArea(), message.getUnits());
@@ -265,5 +303,9 @@ public class Game {
 
     public void setScenarioName(String scenarioName) {
         this.scenarioName = scenarioName;
+    }
+
+    public ArrayList<GameArea> getAreas() {
+        return areas;
     }
 }
