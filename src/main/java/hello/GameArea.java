@@ -100,4 +100,8 @@ public class GameArea {
     public void setColor(String color) {
         this.color = color;
     }
+
+    public ArrayList<Number> getLinks() {
+        return links;
+    }
 }

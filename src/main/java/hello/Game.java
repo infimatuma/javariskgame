@@ -1,10 +1,8 @@
 package hello;
 
-
 import org.springframework.web.util.HtmlUtils;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.stream.IntStream;
 
 public class Game {
@@ -96,36 +94,67 @@ public class Game {
         if(id != null) {
             System.out.println("wanna load game [" + id + "]!");
 
-            areas = new ArrayList<>();
+            String gameKey = "risk.game:" + id;
 
             try {
+                areas = new ArrayList<>();
+                players = new ArrayList<>();
 
-                String gameKey = "risk.game:" + id;
-                String gameAreasCnt = JedisConnection.getLink().hget(gameKey, "numberOfAreas");
+                scenarioName = JedisConnection.getLink().hget(gameKey, "scenario");
+                maxPlayers = Integer.valueOf(JedisConnection.getLink().hget(gameKey, "maxPlayers"));
+                currentPhase = JedisConnection.getLink().hget(gameKey, "phase");
+                currentPlayer = JedisConnection.getLink().hget(gameKey, "player");
 
-                Number AreasSize = Integer.valueOf(gameAreasCnt);
-
-                IntStream.range(0, AreasSize.intValue()).forEach(i -> {
-                    GameArea nextArea = new GameArea(String.valueOf(i), this);
-                    areas.add(nextArea.load());
-                });
-
-                Number PlayersSize = Integer.valueOf(gameAreasCnt);
-
-
-                IntStream.range(0, AreasSize.intValue()).forEach(i -> {
-                    GameArea nextArea = new GameArea(String.valueOf(i), this);
-                    areas.add(nextArea.load());
-                });
+                loadAreas();
+                loadPlayers();
 
                 isLoaded = true;
 
             } catch (Exception e) {
+                System.out.println("Game load exception");
                 System.out.println(e);
             }
 
         }
         return this;
+    }
+
+    public void loadAreas(){
+        String gameKey = "risk.game:" + id;
+
+        try {
+            /* Load areas */
+            String gameAreasCnt = JedisConnection.getLink().hget(gameKey, "numberOfAreas");
+
+            Number AreasSize = Integer.valueOf(gameAreasCnt);
+
+            IntStream.range(0, AreasSize.intValue()).forEach(i -> {
+                GameArea nextArea = new GameArea(String.valueOf(i), this);
+                areas.add(nextArea.load());
+            });
+        } catch (Exception e) {
+            System.out.println("Game areas load exception");
+            System.out.println(e);
+        }
+    }
+
+    public void loadPlayers(){
+        String gameKey = "risk.game:" + id;
+
+        try {
+            /* load players */
+            String gamePlayersCnt = JedisConnection.getLink().hget(gameKey, "numberOfPlayers");
+            Number PlayersSize = Integer.valueOf(gamePlayersCnt);
+
+            IntStream.range(0, PlayersSize.intValue()).forEach(i -> {
+                GamePlayer nextPlayer = new GamePlayer(String.valueOf(i), this);
+                players.add(nextPlayer.load());
+            });
+        }
+        catch (Exception e) {
+            System.out.println("Game players load exception");
+            System.out.println(e);
+        }
     }
 
     /* created a new game for provided payer using game set scenario (default scenario exists) */
@@ -172,7 +201,14 @@ public class Game {
     private Game setIdByPLayer(String playerId) {
         // get player game if any
 
-        String id = JedisConnection.getLink().get("player:" + playerId);
+        String stringId = JedisConnection.getLink().get("player:" + playerId);
+        if(stringId != null) {
+            id = Integer.valueOf(stringId);
+        }
+
+        if(id != null){
+            System.out.println("Got game {" + id + "} by player id " + playerId);
+        }
 
         if (id == null) {
             // if no game linked to player - check for any game with free slots
@@ -180,11 +216,13 @@ public class Game {
 
             // if still no game - create new game
             if (id == null) {
+                System.out.println("Will create new game");
                 create(playerId);
             }
             // link player to game
             if (id != null) {
-                JedisConnection.getLink().set("player:" + playerId, id);
+                System.out.println("Setting game {" + id + "} for player player:" + playerId);
+                JedisConnection.getLink().set("player:" + playerId, String.valueOf(id));
             }
         }
         return this;
@@ -203,10 +241,12 @@ public class Game {
     /* Try to find a game with free slot and make it active game if one exists */
     private void findSlotForPlayer(String playerId) {
         /* Lock game pool to avoid bad things */
+        System.out.println("Will look for free slot for player [" + playerId + "]");
         if(GamePool.lock()){
             Number greatGameId = GamePool.getGameId();
             if(greatGameId != null){
                 id = greatGameId;
+                System.out.println("We picked game " + id);
                 if(lock()){
                     load(); /* load everything-game */
                     GamePlayer nextPlayer = new GamePlayer(playerId, getNewPlayerId(), this);
@@ -289,6 +329,10 @@ public class Game {
         return resolution;
     }
 
+    public String findColorByIndex(Integer index){
+        return allColors.get(index);
+    }
+
     public Number getId() {
         return id;
     }
@@ -307,5 +351,17 @@ public class Game {
 
     public ArrayList<GameArea> getAreas() {
         return areas;
+    }
+
+    public String getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    public String getCurrentPhase() {
+        return currentPhase;
+    }
+
+    public ArrayList<GamePlayer> getPlayers() {
+        return players;
     }
 }

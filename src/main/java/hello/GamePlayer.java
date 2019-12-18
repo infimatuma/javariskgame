@@ -13,6 +13,10 @@ public class GamePlayer {
         this.name = name;
         this.id = id;
     }
+    public GamePlayer(String id, Game game){
+        this.game = game;
+        this.id = id;
+    }
 
     public GamePlayer pickColor(){
         color = game.getFreeColor();
@@ -20,8 +24,8 @@ public class GamePlayer {
     }
 
     public GamePlayer save(){
-        String playerHashName = "GPlayer:"+game.getId()+":"+id;
-        System.out.println("Save ["+playerHashName+"]");
+        String playerHashName = "GPlayer:"+game.getId()+":" + id;
+        System.out.println("Save [" + playerHashName + "]");
 
         JedisConnection.getLink().hset(playerHashName, "color", color);
         JedisConnection.getLink().hset(playerHashName, "id", id);
@@ -31,13 +35,33 @@ public class GamePlayer {
     }
 
     public GamePlayer load(){
-        String playerHashName = "GPlayer:"+game.getId()+":"+id;
-        System.out.println("Load ["+playerHashName+"]");
+        String playerHashName = "GPlayer:" + game.getId() + ":" + id;
+        System.out.println("Load [" + playerHashName + "]");
 
         color = JedisConnection.getLink().hget(playerHashName, "color");
+
+        if(color == null){
+            color = game.findColorByIndex(Integer.valueOf(id));
+        }
+
         name = JedisConnection.getLink().hget(playerHashName, "name");
-        id = JedisConnection.getLink().hget(playerHashName, "id");
+        if(name == null){
+            name = "JohnDoe";
+        }
+        /*id = JedisConnection.getLink().hget(playerHashName, "id");*/
 
         return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public String getId() {
+        return id;
     }
 }
