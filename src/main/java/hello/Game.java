@@ -7,7 +7,11 @@ import java.util.stream.IntStream;
 
 public class Game {
     private Number id;
+
+    private Boolean isLoaded = false;
+
     private String scenarioName;
+    private Number maxPlayers;
 
     private String currentPlayer;
     private String currentPhase;
@@ -15,9 +19,12 @@ public class Game {
     private ArrayList<GameArea> areas;
     private ArrayList<GamePlayer> players;
 
+    private ArrayList<String> allColors;
+
     /* main use as of now */
     public Game() {
         scenarioName = "small";
+        maxPlayers = 2;
     }
 
     /* Create game by id */
@@ -33,6 +40,12 @@ public class Game {
 
     /* makes sure we have a current game state */
     public Game initialize(){
+        allColors.add("red");
+        allColors.add("green");
+        allColors.add("grey");
+        allColors.add("blue");
+        allColors.add("yellow");
+
         /*
         if(id == null) {
             create();
@@ -43,16 +56,38 @@ public class Game {
     public Game save(){
         /* we can only save game if id is set */
         if(id != null) {
-            String gameKey = "risk.scenario:"+id;
-            JedisConnection.getLink().hset(gameKey, "numberOfAreas", String.valueOf(areas.size()));
+            String gameKey = "risk.game:"+id;
+
             JedisConnection.getLink().hset(gameKey, "scenario", scenarioName);
+            JedisConnection.getLink().hset(gameKey, "maxPlayers", maxPlayers.toString());
             JedisConnection.getLink().hset(gameKey, "phase", currentPhase);
             JedisConnection.getLink().hset(gameKey, "player", currentPlayer);
 
+            saveAreas();
+            savePlayers();
+        }
+        return this;
+    }
+    public Game savePlayers(){
+        /* we can only save game if id is set */
+        if(id != null) {
+            String gameKey = "risk.game:"+id;
+            JedisConnection.getLink().hset(gameKey, "numberOfPlayers", String.valueOf(players.size()));
+            players.forEach(GamePlayer::save);
+        }
+        return this;
+    }
+
+    public Game saveAreas(){
+        /* we can only save game if id is set */
+        if(id != null) {
+            String gameKey = "risk.game:"+id;
+            JedisConnection.getLink().hset(gameKey, "numberOfAreas", String.valueOf(areas.size()));
             areas.forEach(GameArea::save);
         }
         return this;
     }
+
 
     public Game load(){
         if(id != null) {
@@ -63,18 +98,21 @@ public class Game {
             try {
 
                 String gameKey = "risk.scenario:" + id;
-                String scenarioAreasCnt = JedisConnection.getLink().hget(gameKey, "numberOfAreas");
+                String gameAreasCnt = JedisConnection.getLink().hget(gameKey, "numberOfAreas");
 
-                Number AreasSize = Integer.valueOf(scenarioAreasCnt);
+                Number AreasSize = Integer.valueOf(gameAreasCnt);
 
                 IntStream.range(0, AreasSize.intValue()).forEach(i -> {
                     GameArea nextArea = new GameArea(String.valueOf(i), this);
                     areas.add(nextArea.load());
                 });
 
+                isLoaded = true;
+
             } catch (Exception e) {
                 System.out.println(e);
             }
+
         }
         return this;
     }
@@ -83,24 +121,29 @@ public class Game {
     public Game create(String playerNumberOneId){
         if(id == null){
             id = JedisConnection.getLink().incr("risk.gameIds");
-            currentPhase = "setup";
-            currentPlayer = "";
+            if(lock()) {
+                currentPhase = "setup";
+                currentPlayer = "waiting-for-players";
 
-            areas = new ArrayList<GameArea>();
-            players = new ArrayList<GamePlayer>();
+                areas = new ArrayList<GameArea>();
+                players = new ArrayList<GamePlayer>();
 
-            Scenario baseScenario = new Scenario(scenarioName);
-            baseScenario.load();
+                Scenario baseScenario = new Scenario(scenarioName);
+                baseScenario.load();
 
-            ArrayList<GameScenarioArea> scenarioAreas = baseScenario.getAreas();
-            scenarioAreas.forEach(this::createAreaFromScenarioArea);
+                ArrayList<GameScenarioArea> scenarioAreas = baseScenario.getAreas();
+                scenarioAreas.forEach(this::createAreaFromScenarioArea);
 
-            if(playerNumberOneId != null){
-                GamePlayer playerNumberOne = new GamePlayer(playerNumberOneId, this);
-                players.add(playerNumberOne);
+                if (playerNumberOneId != null) {
+                    GamePlayer playerNumberOne = new GamePlayer(playerNumberOneId, this);
+                    players.add(playerNumberOne.pickColor());
+                }
+
+                save(); /* save initial game state */
+                unlock();
+
+                GamePool.addGameToPool(id); /* lock is not mandatory as it is ok to have multiply games in pool */
             }
-
-            save(); /* save initial game state */
         }
         return this;
     }
@@ -109,6 +152,10 @@ public class Game {
     private void createAreaFromScenarioArea(GameScenarioArea area) {
         GameArea newArea = new GameArea(area, this);
         areas.add(newArea);
+    }
+
+    public String getFreeColor(){
+        return allColors.get(players.size());
     }
 
     private Game applyEffects(ArrayList<GameEffect> effects){
@@ -123,6 +170,7 @@ public class Game {
 
         if (id == null) {
             // if no game linked to player - check for any game with free slots
+            findSlotForPlayer(playerId);
 
             // if still no game - create new game
             if (id == null) {
@@ -131,10 +179,31 @@ public class Game {
             // link player to game
             if (id != null) {
                 JedisConnection.getLink().set("player:" + playerId, id);
-                JedisConnection.getLink().sadd("game:" + id + ":players", playerId);
             }
         }
         return this;
+    }
+
+    /* Try to find a game with free slot and make it active game if one exists */
+    private void findSlotForPlayer(String playerId) {
+        /* Lock game pool to avoid bad things */
+        if(GamePool.lock()){
+            Number greatGameId = GamePool.getGameId();
+            if(greatGameId != null){
+                id = greatGameId;
+                if(lock()){
+                    load(); /* load everything-game */
+                    GamePlayer nextPlayer = new GamePlayer(playerId, this);
+                    players.add(nextPlayer.pickColor());
+
+                    savePlayers(); /* save game players while pool is locked */
+                    GamePool.fixGameStateInPool(id, maxPlayers.intValue(), players.size());
+
+                    unlock();
+                }
+            }
+        }
+        GamePool.unlock();
     }
 
     private boolean lock(){
@@ -157,7 +226,7 @@ public class Game {
             /* should have id set now */
             /* lock the game before we load it */
             if(lock()){
-                load(); // Load current game
+                load(); // Load current game. Even if it is loaded already - we have to be sure we nobody changed anything in between.
 
                 /* handle actionMessage received by player here */
 
