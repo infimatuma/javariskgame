@@ -27,7 +27,7 @@ public class GameArea {
     }
     public GameArea save(){
         String areaHashName = "GArea:"+game.getId()+":"+id;
-        System.out.println("Save ["+areaHashName+"]");
+        //System.out.println("Save ["+areaHashName+"]");
 
         JedisConnection.getLink().hset(areaHashName, "x", x);
         JedisConnection.getLink().hset(areaHashName, "y", y);
@@ -47,7 +47,7 @@ public class GameArea {
         color = JedisConnection.getLink().hget(areaHashName, "color");
 
         String setName = "SAreaLinks:"+game.getScenarioName()+":"+id;
-        System.out.println("Get ["+setName+"]");
+        //System.out.println("Get ["+setName+"]");
 
         Set linksInRedis = JedisConnection.getLink().smembers(setName);
         links = new ArrayList<Number>();

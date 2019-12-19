@@ -21,6 +21,8 @@ public class Game {
 
     private ArrayList<String> allColors;
 
+    private GameAreasManager areasManager;
+
     /* main use as of now */
     public Game() {
         scenarioName = "small";
@@ -297,6 +299,7 @@ public class Game {
     public Action handleAction(ActionMessage message){
         // create basic Action out of message
         Action resolution = new Action(message.getPlayerId(), message.getAction(), message.getArea(), message.getTargetArea(), message.getUnits());
+        System.out.println("Action instant = " + resolution.getAction() + ", "+message.getAction());
 
         initialize().setIdByPLayer(message.getPlayerId());
 
@@ -312,12 +315,17 @@ public class Game {
                 * All valid game effects should be documented in GameEffect class
                 */
 
+                System.out.println("Action now = " + resolution.getAction());
+                GameActionHandler actionHandler = new GameActionHandler(this, resolution);
+                actionHandler.process();
+
+
                 /*
                 GameEffect nextEffect = new GameEffect();
                 resolution.addGameEffect(nextEffect);
                 */
 
-                applyEffects(resolution.getEffects());
+                //applyEffects(resolution.getEffects());
 
                 /* ----------------------------------------------- */
 
@@ -367,5 +375,12 @@ public class Game {
 
     public Number getMaxPlayers() {
         return maxPlayers;
+    }
+
+    public GameAreasManager findAreasManager() {
+        if(areasManager == null){
+            areasManager = new GameAreasManager(this);
+        }
+        return areasManager;
     }
 }

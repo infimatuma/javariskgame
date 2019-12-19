@@ -7,10 +7,10 @@ public class JedisConnection{
 
     public static void connect(){
         if(link == null){
-            //link = new Jedis("paris.cloudyhost.info", 6379);
-            //System.out.println("Autentification " + link.auth("Risk#777b&"));
+            link = new Jedis("paris.cloudyhost.info", 6379);
+            System.out.println("Autentification " + link.auth("Risk#777b&"));
 
-            link = new Jedis("localhost", 6379);
+            //link = new Jedis("localhost", 6379);
 
             System.out.println("Server Ping: " + link.ping());
         }

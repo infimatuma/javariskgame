@@ -29,8 +29,15 @@ public class Action {
     }
 
     public void addGameEffect(GameEffect effect){
+        if(effects == null){
+            effects = new ArrayList<GameEffect>();
+        }
         effects.add(effect);
     }
+    public void addGameEffects(ArrayList<GameEffect> effects){
+        effects.forEach((n) -> this.addGameEffect(n));
+    }
+
 
     public String getAction() {
         return action;
