@@ -364,4 +364,8 @@ public class Game {
     public ArrayList<GamePlayer> getPlayers() {
         return players;
     }
+
+    public Number getMaxPlayers() {
+        return maxPlayers;
+    }
 }

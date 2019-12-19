@@ -1,23 +1,28 @@
 package hello;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.util.HtmlUtils;
 
-import java.io.File;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+
+@RestController
 public class GreetingController {
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
-    @MessageMapping("/hello")
-    @SendTo("/topic/greetings")
+    @RequestMapping("/my_name_is")
     public Greeting greeting(HelloMessage message) throws Exception {
         Game game = new Game();
 
-        return game.handleGreeting(message);
-    }
+        Greeting myGreeting = game.handleGreeting(message);
 
+        if(game.getId() != null){
+            GreetingSimple simpleGreeting = new GreetingSimple(message.getName(), game.getPlayers().size(), game.getMaxPlayers());
+            messagingTemplate.convertAndSend("/topic/game/" + game.getId() + "/greetings", simpleGreeting);
+        }
+
+        return myGreeting;
+    }
 }
