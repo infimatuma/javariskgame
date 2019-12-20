@@ -48,7 +48,6 @@ public class GamePlayer {
         if(name == null){
             name = "JohnDoe";
         }
-        /*id = JedisConnection.getLink().hget(playerHashName, "id");*/
 
         return this;
     }

@@ -16,49 +16,57 @@ public class GameScenarioArea {
     Scenario scenario;
 
     public void save(){
-        String areaHashName = "SArea:"+scenario.getName()+":"+id;
-        System.out.println("Save ["+areaHashName+"]");
+        try{
+            String areaHashName = "SArea:"+scenario.getName()+":"+id;
 
-        JedisConnection.getLink().hset(areaHashName, "x", x);
-        JedisConnection.getLink().hset(areaHashName, "y", y);
-        JedisConnection.getLink().hset(areaHashName, "str", str);
-        JedisConnection.getLink().hset(areaHashName, "id", id);
-        JedisConnection.getLink().hset(areaHashName, "color", color);
+            JedisConnection.getLink().hset(areaHashName, "x", x);
+            JedisConnection.getLink().hset(areaHashName, "y", y);
+            JedisConnection.getLink().hset(areaHashName, "str", str);
+            JedisConnection.getLink().hset(areaHashName, "id", id);
+            JedisConnection.getLink().hset(areaHashName, "color", color);
 
-        String setName = "SAreaLinks:"+scenario.getName()+":"+id;
-        System.out.println("Save ["+setName+"]");
-        JedisConnection.getLink().del(setName);
-        if(links != null){
-            Iterator linksIterator = links.iterator();
-            while (linksIterator.hasNext()) {
-                Number linkId = (Number) linksIterator.next();
-                JedisConnection.getLink().sadd(setName, String.valueOf(linkId));
+            String setName = "SAreaLinks:"+scenario.getName()+":"+id;
+            JedisConnection.getLink().del(setName);
+            if(links != null){
+                Iterator linksIterator = links.iterator();
+                while (linksIterator.hasNext()) {
+                    Number linkId = (Number) linksIterator.next();
+                    JedisConnection.getLink().sadd(setName, String.valueOf(linkId));
+                }
             }
+        }
+        catch (Exception e){
+            System.out.println("Failed to save ScenarioArea");
+            System.out.println(e);
         }
     }
 
     public void load(){
-        String areaHashName = "SArea:"+scenario.getName()+":"+id;
+        try{
+            String areaHashName = "SArea:"+scenario.getName()+":"+id;
 
-        x = JedisConnection.getLink().hget(areaHashName, "x");
-        y = JedisConnection.getLink().hget(areaHashName, "y");
-        str = JedisConnection.getLink().hget(areaHashName, "str");
-        id = JedisConnection.getLink().hget(areaHashName, "id");
-        color = JedisConnection.getLink().hget(areaHashName, "color");
+            x = JedisConnection.getLink().hget(areaHashName, "x");
+            y = JedisConnection.getLink().hget(areaHashName, "y");
+            str = JedisConnection.getLink().hget(areaHashName, "str");
+            id = JedisConnection.getLink().hget(areaHashName, "id");
+            color = JedisConnection.getLink().hget(areaHashName, "color");
 
-        String setName = "SAreaLinks:"+scenario.getName()+":"+id;
-        System.out.println("Get ["+setName+"]");
+            String setName = "SAreaLinks:"+scenario.getName()+":"+id;
 
-        Set linksInRedis = JedisConnection.getLink().smembers(setName);
-        links = new ArrayList<Number>();
-        if(linksInRedis!=null && linksInRedis.size()>0) {
-            Iterator setIterator = linksInRedis.iterator();
-            while (setIterator.hasNext()) {
-                String nextVal = (String) setIterator.next();
-                links.add(Integer.valueOf(nextVal));
+            Set linksInRedis = JedisConnection.getLink().smembers(setName);
+            links = new ArrayList<Number>();
+            if(linksInRedis!=null && linksInRedis.size()>0) {
+                Iterator setIterator = linksInRedis.iterator();
+                while (setIterator.hasNext()) {
+                    String nextVal = (String) setIterator.next();
+                    links.add(Integer.valueOf(nextVal));
+                }
             }
         }
-        System.out.println("go-next");
+        catch (Exception e){
+            System.out.println("Failed to load ScenarioArea");
+            System.out.println(e);
+        }
     }
 
     public String getX() {

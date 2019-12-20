@@ -12,6 +12,10 @@ public class HelloMessage {
     }
 
     public String getName() {
+        // We do not want this to ever be null
+        if(name == null){
+            name = "";
+        }
         return name;
     }
 

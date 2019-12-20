@@ -2,10 +2,10 @@ package hello;
 
 public class GreetingSimple {
     private String name;
-    private Number playersNow;
-    private Number playersNeed;
+    private Integer playersNow;
+    private Integer playersNeed;
 
-    public GreetingSimple(String name, Number playersNow, Number playersNeed) {
+    public GreetingSimple(String name, Integer playersNow, Integer playersNeed) {
         this.name = name;
         this.playersNow = playersNow;
         this.playersNeed = playersNeed;
@@ -15,11 +15,11 @@ public class GreetingSimple {
         return name;
     }
 
-    public Number getPlayersNow() {
+    public Integer getPlayersNow() {
         return playersNow;
     }
 
-    public Number getPlayersNeed() {
+    public Integer getPlayersNeed() {
         return playersNeed;
     }
 }

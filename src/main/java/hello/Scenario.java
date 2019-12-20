@@ -34,6 +34,7 @@ public class Scenario extends Action {
 
         }
         catch(Exception e) {
+            System.out.println("Failed to save scenario ["+name+"]!");
             System.out.println(e);
         }
     }
@@ -43,25 +44,29 @@ public class Scenario extends Action {
         areas = new ArrayList<>();
 
         try {
-
             String scenarioKey = "risk.scenario:"+name;
             //System.out.println(scenarioKey);
             String scenarioAreasCnt = JedisConnection.getLink().hget("risk.scenario:"+name, "numberOfAreas");
             //System.out.println(scenarioAreasCnt);
-            Number AreasSize = Integer.valueOf(scenarioAreasCnt);
-            //System.out.println(AreasSize);
+            if(scenarioAreasCnt != null){
+                Number AreasSize = Integer.valueOf(scenarioAreasCnt);
+                //System.out.println(AreasSize);
 
-            IntStream.range(0, AreasSize.intValue()).forEach(i -> {
-            //IntStream.range(0, 3).forEach(i -> {
-                GameScenarioArea nextArea = new GameScenarioArea();
-                nextArea.setId(String.valueOf(i));
-                nextArea.setScenario(this);
-                nextArea.load();
-                areas.add(nextArea);
-            });
-
+                IntStream.range(0, AreasSize.intValue()).forEach(i -> {
+                //IntStream.range(0, 3).forEach(i -> {
+                    GameScenarioArea nextArea = new GameScenarioArea();
+                    nextArea.setId(String.valueOf(i));
+                    nextArea.setScenario(this);
+                    nextArea.load();
+                    areas.add(nextArea);
+                });
+            }
+            else{
+                System.out.println("Unknown scenario ["+name+"]!");
+            }
         }
         catch(Exception e) {
+            System.out.println("Failed to load scenario ["+name+"]!");
             System.out.println(e);
         }
     }
