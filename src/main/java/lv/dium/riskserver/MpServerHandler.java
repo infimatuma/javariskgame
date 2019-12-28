@@ -59,11 +59,33 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
             //ctx.channel().writeAndFlush("Payload ["+t.substring(2, t.length())+"]" + '\n');
             // greeting command
             if(t.substring(1,2).equals("g")){
+
                 String playerId = t.substring(2, t.length());
 
-                Game game = new Game();
-                String payload = game.greetPlayer(playerId);
+                Number gameId = Pool.players.get(playerId);
+
+                Game game;
+                String payload;
+
+                if(gameId == null ) {
+                    game = new Game();
+                    payload = game.greetPlayer(playerId);
+
+                    Pool.games.put(game.getId(), game);
+                    Pool.players.put(playerId, game.getId());
+                }
+                else{
+                    game = Pool.games.get(gameId);
+                    payload = game.greetPlayerInGame(playerId);
+                }
+
+
+
                 ctx.channel().writeAndFlush("=g" + payload + '\n');
+            }
+
+            if(t.substring(1,2).equals("g")) {
+
             }
         }
 

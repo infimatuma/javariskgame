@@ -2,16 +2,23 @@ package lv.dium.riskserver;
 
 import java.util.ArrayList;
 
-@RiskActionProcessor("attack")
+@RiskActionProcessor("a")
 public class ProcessorAttack implements GameActionProcessor{
     private GameActionHandler gameActionHandler;
+    private Integer targetAreaID;
+    private Integer sourceAreaID;
+    private Integer units;
+
+    private void parsePayload(String payload){
+        sourceAreaID = Integer.valueOf(payload.substring(0,2));
+        targetAreaID = Integer.valueOf(payload.substring(2,4));
+        units = Integer.valueOf(payload.substring(4,6));
+    }
 
     @Override
     public void resolve(){
         try {
-            Number targetAreaID = Integer.valueOf(gameActionHandler.resolution.getTargetArea());
-            Number sourceAreaID = Integer.valueOf(gameActionHandler.resolution.getArea());
-            Number units = gameActionHandler.resolution.getUnits();
+            parsePayload(gameActionHandler.resolution.getPayload());
 
             if(targetAreaID == null){
                 System.out.println("ERROR: ProcessorAttack requires targetAreaID!");

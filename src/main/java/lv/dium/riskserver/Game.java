@@ -28,6 +28,14 @@ public class Game {
 
     private volatile Boolean isLocked = false;
 
+    public Game() {
+
+    }
+    public Game(Number gameId) {
+        id = gameId;
+        initialize();
+    }
+
     /**
      * Handles game initialization
      * <p>
@@ -96,6 +104,7 @@ public class Game {
                     }
 
                     // Save initial game state
+                    isLoaded = true;
                     save();
                 }
                 catch(Exception e){
@@ -241,19 +250,8 @@ public class Game {
         return this;
     }
 
-    public String greetPlayer(String PlayerStringId){
-        // create basic Action out of message
+    public String greetPlayerInGame(String PlayerStringId){
         Greeting resolution = new Greeting("Hello, " + HtmlUtils.htmlEscape(PlayerStringId) + "!");
-
-        // Check if we have a PlayerId and find valid game
-        if(PlayerStringId != ""){
-            try{
-                initialize().setIdByPLayer(PlayerStringId);
-            }
-            catch (Exception e){
-                System.out.println("Failed to get game by playerId [" + PlayerStringId + "]");
-            }
-        }
 
         if(id != null) {
             // lock the game before we load it
@@ -278,7 +276,25 @@ public class Game {
         catch (Exception e){
             System.out.println("Failed writeValueAsString for resolution");
         }
+
         return json;
+    }
+
+    public String greetPlayer(String PlayerStringId){
+        // create basic Action out of message
+
+        // Check if we have a PlayerId and find valid game
+        if(PlayerStringId != ""){
+            try{
+                initialize().setIdByPLayer(PlayerStringId);
+            }
+            catch (Exception e){
+                System.out.println("Failed to get game by playerId [" + PlayerStringId + "]");
+            }
+        }
+
+        return greetPlayerInGame(PlayerStringId);
+
     }
     public Greeting handleGreeting(HelloMessage message){
         // Extract PlayerId from message
@@ -318,54 +334,45 @@ public class Game {
         return resolution;
     }
 
-    public Action handleAction(ActionMessage message){
+    public Action handleAction(String action, String payload){
         // create basic Action out of message
-        Action resolution = new Action(message.getPlayerId(), message.getAction(), message.getArea(), message.getTargetArea(), message.getUnits());
-        System.out.println("Action instant = " + resolution.getAction() + ", "+message.getAction());
+        Action resolution = new Action(action, payload);
+        System.out.println("Action instant = " + action + " [ " + payload + "]");
 
-        try {
-            initialize().setIdByPLayer(message.getPlayerId());
-        }
-        catch (Exception e){
-            System.out.println("Failed to get game by playerId [" + message.getPlayerId() + "]");
-        }
+        /* no actions accepted until game is already running
+        We always expect !g greetings before any actions
+        We will force re-login if no active game state exists
+         */
 
-        String receivedAction = resolution.getAction();
+        if(isLoaded) {
+            if (id != null && action != null) {
+                /* should have id set now */
+                /* lock the game before we load it */
+                if (lock()) {
+                    try {
+                        /* handle actionMessage received by player here */
 
-        if(id != null && receivedAction != null) {
-            /* should have id set now */
-            /* lock the game before we load it */
-            if(lock()){
-                try {
-                    load(); // Load current game. Even if it is loaded already - we have to be sure we nobody changed anything in between.
+                        /* Following construction should be used to issue changes to client
+                         * All valid game effects should be documented in GameEffect class
+                         */
 
-                    /* handle actionMessage received by player here */
-
-                    /* Following construction should be used to issue changes to client
-                     * All valid game effects should be documented in GameEffect class
-                     */
-
-                    System.out.println("Action now = " + receivedAction);
-                    GameActionHandler actionHandler = new GameActionHandler(this, resolution);
-                    actionHandler.process();
+                        System.out.println("Action now = " + action);
+                        GameActionHandler actionHandler = new GameActionHandler(this, resolution);
+                        actionHandler.process();
 
 
-                    /*
-                    GameEffect nextEffect = new GameEffect();
-                    resolution.addGameEffect(nextEffect);
-                    */
+                        /*
+                        GameEffect nextEffect = new GameEffect();
+                        resolution.addGameEffect(nextEffect);
+                        */
 
-                    //applyEffects(resolution.getEffects());
+                        //applyEffects(resolution.getEffects());
 
-                    /* ----------------------------------------------- */
-
-                    /* save & unlock game before returning result */
-                    save();
+                    } catch (Exception e) {
+                        System.out.println("Failed to process game[" + id + "] action[" + action + "]");
+                    }
+                    unlock();
                 }
-                catch (Exception e){
-                    System.out.println("Failed to process game[" + id + "] action[" + receivedAction + "]");
-                }
-                unlock();
             }
         }
         /* return complete Action (should be broadcasted in controller) */

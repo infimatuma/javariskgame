@@ -9,23 +9,16 @@ import java.util.ArrayList;
 public class Action {
 
     private String action;
-    private String area;
-    private String targetArea;
-    private Number units;
-    private String playerId;
-    private Boolean isValid;
+    private String payload;
+
     private ArrayList<GameEffect> effects;
 
     public Action() {
     }
 
-    public Action(String playerId, String action, String area, String targetArea, Number units) {
-        this.playerId = playerId;
+    public Action(String action, String payload) {
         this.action = action;
-        this.area = area;
-        this.targetArea = targetArea;
-        this.units = units;
-        this.isValid = true;
+        this.payload = payload;
     }
 
     public void addGameEffect(GameEffect effect){
@@ -38,29 +31,12 @@ public class Action {
         effects.forEach((n) -> this.addGameEffect(n));
     }
 
-
     public String getAction() {
         return action;
     }
-    public String getArea() {
-        return area;
-    }
-    public String getTargetArea() {
-        return targetArea;
-    }
-    public Number getUnits() {
-        return units;
-    }
-    public String getPlayerId() {
-        return playerId;
-    }
 
-    public Boolean getValid() {
-        return isValid;
-    }
-
-    public void setValid(Boolean valid) {
-        isValid = valid;
+    public String getPayload() {
+        return payload;
     }
 
     public ArrayList<GameEffect> getEffects() {
