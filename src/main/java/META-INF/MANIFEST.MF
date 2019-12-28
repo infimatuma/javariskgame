@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
-Main-Class: hello.Application
+Main-Class: lv.dium.riskserver.Application
 Class-Path: hello/
 
