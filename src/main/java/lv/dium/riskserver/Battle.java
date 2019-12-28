@@ -1,4 +1,4 @@
-package hello;
+package lv.dium.riskserver;
 
 import static java.lang.Integer.parseInt;
 
