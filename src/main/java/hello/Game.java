@@ -1,5 +1,6 @@
 package hello;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.util.HtmlUtils;
 
 import java.lang.reflect.Array;
@@ -339,6 +340,45 @@ public class Game {
         return this;
     }
 
+    public String greetPlayer(String PlayerStringId){
+        // create basic Action out of message
+        Greeting resolution = new Greeting("Hello, " + HtmlUtils.htmlEscape(PlayerStringId) + "!");
+
+        // Check if we have a PlayerId and find valid game
+        if(PlayerStringId != ""){
+            try{
+                initialize().setIdByPLayer(PlayerStringId);
+            }
+            catch (Exception e){
+                System.out.println("Failed to get game by playerId [" + PlayerStringId + "]");
+            }
+        }
+
+        if(id != null) {
+            // lock the game before we load it
+            if(lock()){
+                try{
+                    // Load current game and pass link to resolution
+                    load();
+                    resolution.setGame(this);
+                }
+                catch (Exception e){
+                    System.out.println("Failed to handle Greeting from player[" + PlayerStringId + "]");
+                }
+                unlock();
+            }
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = "";
+        try {
+            json = objectMapper.writeValueAsString(resolution);
+        }
+        catch (Exception e){
+            System.out.println("Failed writeValueAsString for resolution");
+        }
+        return json;
+    }
     public Greeting handleGreeting(HelloMessage message){
         // Extract PlayerId from message
         String PlayerStringId = message.getName();
