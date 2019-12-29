@@ -18,6 +18,7 @@ public class GameArea {
         this.id = area.id;
         this.color = area.color;
         this.game = game;
+        this.links = area.links;
     }
     public GameArea(String id, Game game) {
         this.id = id;

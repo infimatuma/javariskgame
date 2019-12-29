@@ -37,6 +37,6 @@ public class MpServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new StringEncoder());
 
         // and then business logic.
-        pipeline.addLast(new MpServerHandler());
+        pipeline.addLast(new MpServerHandler(new HexLoginHandler()));
     }
 }

@@ -1,12 +1,8 @@
 package lv.dium.riskserver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.util.HtmlUtils;
 
 import java.util.ArrayList;
-import java.util.stream.IntStream;
-
-import static java.lang.Integer.*;
 
 public class Game {
     private Number id; // Does it really have to be Number?
@@ -29,7 +25,7 @@ public class Game {
     private volatile Boolean isLocked = false;
 
     public Game() {
-
+        initialize();
     }
     public Game(Number gameId) {
         id = gameId;
@@ -80,16 +76,14 @@ public class Game {
     }
 
     /* created a new game for provided payer using game set scenario (default scenario exists) */
-    public Game create(String playerNumberOneId){
+    public void start(){
         if(id == null && scenarioName != ""){
             id = JedisConnection.getLink().incr("risk.gameIds");
-            if(id != null && lock()) {
+            if(id != null) {
+                initialize();
+
                 currentPhase = "setup";
                 currentPlayer = "waiting-for-players";
-
-                // Make sure those are empty
-                areas = new ArrayList<GameArea>();
-                players = new ArrayList<GamePlayer>();
 
                 Scenario baseScenario = new Scenario(scenarioName);
                 try{
@@ -98,29 +92,14 @@ public class Game {
                     ArrayList<GameScenarioArea> scenarioAreas = baseScenario.getAreas();
                     scenarioAreas.forEach(this::createAreaFromScenarioArea);
 
-                    if (playerNumberOneId != null) {
-                        GamePlayer playerNumberOne = new GamePlayer(playerNumberOneId, "0", this);
-                        players.add(playerNumberOne.pickColor());
-                    }
-
-                    // Save initial game state
                     isLoaded = true;
-                    save();
                 }
                 catch(Exception e){
                     System.out.println("Failed to create game[" + id + "]");
                 }
-                unlock();
 
-                try{
-                    GamePool.addGameToPool(id); /* lock is not mandatory as it is ok to have multiply games in pool */
-                }
-                catch (Exception e){
-                    System.out.println("Failed to add game to pool[" + id + "]");
-                }
             }
         }
-        return this;
     }
 
     /* Copy all required properties from GameScenarioArea into new GameArea */
@@ -135,88 +114,22 @@ public class Game {
         return allColors.get(players.size());
     }
 
-    private Game setIdByPLayer(String playerId) {
-        // get player game if any
-        String stringId = null;
-        try {
-            stringId = JedisConnection.getLink().get("player:" + playerId);
+    private String getNewPlayerId(){
+        String newID = null;
+        try{
+            if(players != null){
+                newID = String.valueOf(players.size());
+            }
+            else{
+                newID = "0";
+            }
         }
         catch (Exception e){
-            System.out.println("Redis error while getting players[" + playerId + "] current game game");
-        }
-
-        if(stringId != null) {
-            id = valueOf(stringId);
-            System.out.println("Got game {" + id + "} by player id " + playerId);
-        }
-
-        if (id == null) {
-            // if no game linked to player - check for any game with free slots
-            findSlotForPlayer(playerId);
-
-            // if still no game - create new game
-            if (id == null) {
-                System.out.println("Will create new game");
-                create(playerId);
-            }
-            // link player to game
-            if (id != null) {
-                System.out.println("Setting game {" + id + "} for player player:" + playerId);
-                try {
-                    JedisConnection.getLink().set("player:" + playerId, String.valueOf(id));
-                }
-                catch (Exception e){
-                    System.out.println("Redis error while setting players[" + playerId + "] current game game");
-                }
-            }
-        }
-        return this;
-    }
-
-    private String getNewPlayerId(){
-        String newID;
-        if(players != null){
-            newID = String.valueOf(players.size());
-        }
-        else{
-            newID = "0";
+            System.out.println("Can not getNewPlayerId: " + e);
         }
         return newID;
     }
 
-    /** Try to find a game with free slot and make it active game if one exists
-     * @param playerId login name of a player we should look for a game
-     **/
-    private void findSlotForPlayer(String playerId) {
-        System.out.println("Will look for free slot for player [" + playerId + "]");
-
-        // Lock game pool to avoid bad things
-        if(GamePool.lock()){
-            Number greatGameId = GamePool.getGameId();
-            if(greatGameId != null){
-                id = greatGameId;
-                System.out.println("We picked game " + id);
-                if(lock()){
-                    try {
-                        // Load everything-game
-                        load();
-
-                        // Create player object and add it to game
-                        GamePlayer nextPlayer = new GamePlayer(playerId, getNewPlayerId(), this);
-                        players.add(nextPlayer.pickColor());
-
-                        // Pass current state to GamePool
-                        GamePool.fixGameStateInPool(id, maxPlayers, players.size());
-                    }
-                    catch (Exception e) {
-                        System.out.println("Failed to load game[" + greatGameId + "] and assign new player[" + playerId + "]");
-                        unlock();
-                    }
-                }
-            }
-        }
-        GamePool.unlock();
-    }
 
     private boolean lock(){
         /* redis.setnx ?*/
@@ -250,88 +163,17 @@ public class Game {
         return this;
     }
 
-    public String greetPlayerInGame(String PlayerStringId){
-        Greeting resolution = new Greeting("Hello, " + HtmlUtils.htmlEscape(PlayerStringId) + "!");
-
-        if(id != null) {
-            // lock the game before we load it
-            if(lock()){
-                try{
-                    // Load current game and pass link to resolution
-                    load();
-                    resolution.setGame(this);
-                }
-                catch (Exception e){
-                    System.out.println("Failed to handle Greeting from player[" + PlayerStringId + "]");
-                }
-                unlock();
-            }
-        }
-
+    public String asJson(){
         ObjectMapper objectMapper = new ObjectMapper();
         String json = "";
         try {
-            json = objectMapper.writeValueAsString(resolution);
+            json = objectMapper.writeValueAsString(this);
         }
         catch (Exception e){
-            System.out.println("Failed writeValueAsString for resolution");
+            System.out.println("Failed writeValueAsString for game");
         }
 
         return json;
-    }
-
-    public String greetPlayer(String PlayerStringId){
-        // create basic Action out of message
-
-        // Check if we have a PlayerId and find valid game
-        if(PlayerStringId != ""){
-            try{
-                initialize().setIdByPLayer(PlayerStringId);
-            }
-            catch (Exception e){
-                System.out.println("Failed to get game by playerId [" + PlayerStringId + "]");
-            }
-        }
-
-        return greetPlayerInGame(PlayerStringId);
-
-    }
-    public Greeting handleGreeting(HelloMessage message){
-        // Extract PlayerId from message
-        String PlayerStringId = message.getName();
-        if(PlayerStringId == null){
-            PlayerStringId = "";
-        }
-
-        // create basic Action out of message
-        Greeting resolution = new Greeting("Hello, " + HtmlUtils.htmlEscape(PlayerStringId) + "!");
-
-        // Check if we have a PlayerId and find valid game
-        if(PlayerStringId != ""){
-            try{
-                initialize().setIdByPLayer(PlayerStringId);
-            }
-            catch (Exception e){
-                System.out.println("Failed to get game by playerId [" + PlayerStringId + "]");
-            }
-        }
-
-        if(id != null) {
-            // lock the game before we load it
-            if(lock()){
-                try{
-                    // Load current game and pass link to resolution
-                    load();
-                    resolution.setGame(this);
-                }
-                catch (Exception e){
-                    System.out.println("Failed to handle Greeting from player[" + message.getName() + "]");
-                }
-                unlock();
-            }
-        }
-
-        return resolution;
     }
 
     public Action handleAction(String action, String payload){
@@ -448,4 +290,16 @@ public class Game {
     public void setCurrentPhase(String currentPhase) {
         this.currentPhase = currentPhase;
     }
+
+    public void addUser(MpUser user) {
+        try {
+            GamePlayer newPlayer = new GamePlayer(user.getUsername(), getNewPlayerId(), this);
+            newPlayer.pickColor();
+            players.add(newPlayer);
+        }
+        catch (Exception e){
+            System.out.println("Can not add user to game: " + e);
+        }
+    }
+
 }
