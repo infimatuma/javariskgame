@@ -1,6 +1,6 @@
 package lv.dium.riskserver;
 
-public class MpUser {
+public class MpUser extends Object {
     private String username;
     private String password;
     private String id;
@@ -49,5 +49,21 @@ public class MpUser {
 
     public void setAuthorized(boolean authorized) {
         isAuthorized = authorized;
+    }
+
+    public boolean equals(Object user){
+        if (!(user instanceof MpUser)) return false;
+        MpUser otherUser = (MpUser)user;
+
+        System.out.println("compare [" + getUsername() + "] [" + otherUser.getUsername() + "]");
+
+        boolean is = false;
+        try{
+            if(otherUser.getUsername().equals(this.getUsername())){
+                is = true;
+            }
+        }
+        catch (Exception e){}
+        return is;
     }
 }

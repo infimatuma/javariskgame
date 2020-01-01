@@ -1,6 +1,6 @@
 package lv.dium.riskserver;
 
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.ChannelGroup;
 
 import java.util.HashMap;
@@ -9,39 +9,21 @@ import java.util.Map;
 /* need some way to make this thread safe */
 
 public class Pool {
-    public static Map<Number, Game> games = new HashMap<>();
-    public static Map<String, Number> players = new HashMap<>();
-    public static Map<String, MpUser> channelUsers = new HashMap<>();
-    public static Map<String, MpUser> users = new HashMap<>();
-    public static Map<String, Channel> userChannels = new HashMap<>();
-    public static Map<Number, ChannelGroup> gameChannelGroups = new HashMap<Number, ChannelGroup>();
+    public static Map<String, Game> gamesIndexedByPlayer = new HashMap<>();
+    public static Map<String, ChannelHandlerContext> userChannels = new HashMap<String, io.netty.channel.ChannelHandlerContext>();
 
-    /*
-    public static void putIntoGames(Number n, Game g){
-        games.put(n, g);
-    }
-    public static Game getFromGames(Number n){
-        return games.get(n);
-    }
+    public static synchronized ChannelHandlerContext putAndGetUserChannel(String username, ChannelHandlerContext newChannelContext) {
+        ChannelHandlerContext oldContext = null;
+        try {
+            oldContext = userChannels.get(username);
+        }
+        catch (Exception e){
+            System.out.println("Pool [userChannels.get] : " + e);
+        }
+        if(newChannelContext != null) {
+            userChannels.put(username, newChannelContext);
+        }
 
-    public static void putIntoPlayers(String p, Number g){
-        players.put(p, g);
+        return oldContext;
     }
-    public static Game getFromPlayers(String n){
-        return games.get(n);
-    }
-
-    public static void putIntoChannelUsers(String p, MpUser u){
-        channelUsers.put(p, u);
-    }
-    public static MpUser getFromChannelUsers(String n){
-        return channelUsers.get(n);
-    }
-
-    public static void putIntoUserChannels(String p, Channel u){
-        userChannels.put(p, u);
-    }
-    public static Channel getFromUserChannels(String n){
-        return userChannels.get(n);
-    }*/
 }

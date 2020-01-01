@@ -6,6 +6,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
@@ -20,9 +21,11 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
     static final ChannelGroup afkChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     static final ChannelGroup authorizedChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     private LoginHandler loginHandler;
-    static final LinkedBlockingQueue<String> usersInQueue = new LinkedBlockingQueue<>();
+    static final LinkedBlockingQueue<MpUser> usersInQueue = new LinkedBlockingQueue<>();
 
     static final int maximumPlayersPerGame = 2;
+
+    final static AttributeKey<MpUser> MP_USER_ATTRIBUTE_KEY = AttributeKey.valueOf("authorized_user");
 
     public MpServerHandler(LoginHandler loginHandler) {
         this.loginHandler = loginHandler;
@@ -60,6 +63,8 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
         // filter commands
         if(t.substring(0,1).equals("!")){
 
+            MpUser authorizedUser = null;
+
             // login command
             if(t.substring(1,2).equals("l")){
                 // payload should be a json string, but we do not test it here
@@ -68,13 +73,42 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                 MpUser user = loginHandler.getUserFromPayload(payload);
                 if(user.isAuthorized()){
                     // add channel to authorized channels
+                    authorizedUser = user;
                     authorizedChannels.add(ctx.channel());
-                    Pool.channelUsers.put(ctx.channel().id().toString(), user);
-                    Pool.userChannels.put(user.getUsername(), ctx.channel());
-                    Pool.users.put(user.getUsername(), user);
+
+                    ctx.channel().attr(MP_USER_ATTRIBUTE_KEY).set(user);
+                    ChannelHandlerContext oldCtx = Pool.putAndGetUserChannel(user.getUsername(), ctx);
+
+                    if(oldCtx == null){
+                        System.out.println("New user login");
+                    }
+                    else{
+                        System.out.println("User re-login");
+                    }
 
                     // If ongoing game exists
-                    if(Pool.players.get(user.getUsername()) != null){
+                    Game existingGame = Pool.gamesIndexedByPlayer.get(user.getUsername());
+
+                    // If old channel for the same user exists - close it
+                    if(oldCtx != null){
+                        System.out.println("Will match connectons");
+                        // only close it if this is a different channel
+                        if(oldCtx.channel().id() != ctx.channel().id()) {
+                            System.out.println("Will close old connection");
+                            if(existingGame != null) {
+                                System.out.println("We have a game - so will call replaceOrSetChannel");
+                                existingGame.replaceOrSetChannel(oldCtx.channel(), ctx.channel());
+                            }
+                            System.out.println("Writingf [fc] to old channel and closing");
+                            oldCtx.channel().writeAndFlush("=fcNewChannel" + '\n');
+                            oldCtx.channel().close();
+                        }
+                        else{
+                            System.out.println("This is the same connection: " + oldCtx.channel().id() + " == " +ctx.channel().id());
+                        }
+                    }
+
+                    if(existingGame != null){
                         // return login succeed, ongoing game exists
                         ctx.channel().writeAndFlush("=lg" + '\n');
                     }
@@ -89,7 +123,10 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                 }
             }
             // Authorization required for commands below
-            MpUser authorizedUser = Pool.channelUsers.get(ctx.channel().id().toString());
+            if(authorizedUser == null) {
+                authorizedUser = ctx.channel().attr(MP_USER_ATTRIBUTE_KEY).get();
+            }
+
             if(authorizedUser != null && authorizedUser.isAuthorized()) {
                 // greeting command
                 if (t.substring(1, 2).equals("g")) {
@@ -104,14 +141,16 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
 
                         synchronized (this) {
                             try {
-                                gameId = Pool.players.get(playerId);
+                                game = Pool.gamesIndexedByPlayer.get(playerId);
                             }
                             catch (Exception e){
                                 System.out.println("Pool.player.get failed: " + e);
                             }
-                            if (gameId == null) { // handle queue pool
-                                if(!usersInQueue.contains(authorizedUser.getUsername())) {
-                                    usersInQueue.add(authorizedUser.getUsername());
+
+                            if (game == null) { // handle queue pool
+                                if(!usersInQueue.contains(authorizedUser)) {
+                                    usersInQueue.add(authorizedUser);
+                                    System.out.println("Pool.add: " + authorizedUser.getUsername());
                                 }
 
                                 // Create a game if enough users
@@ -120,34 +159,59 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
 
                                     // create game's channel group
                                     DefaultChannelGroup gameChannelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+                                    game.setChannelGroup(gameChannelGroup);
 
                                     try {
                                         for (int i = 0; i < maximumPlayersPerGame; i++) {
-                                            String nextUserLogin = usersInQueue.poll();
-                                            game.addUser(Pool.users.get(nextUserLogin));
-                                            gameChannelGroup.add(Pool.userChannels.get(nextUserLogin));
+                                            MpUser nextUser = usersInQueue.poll();
+                                            game.addUser(nextUser);
+
+                                            // add users most recent channel to game's channel group
+                                            gameChannelGroup.add(Pool.putAndGetUserChannel(nextUser.getUsername(), null).channel());
+
+                                            try{
+                                                Pool.gamesIndexedByPlayer.put(nextUser.getUsername(), game);
+                                                System.out.println("Game index updated for player " + nextUser.getUsername());
+                                            }
+                                            catch (Exception e){
+                                                System.out.println("gamesIndexedByPlayer failed: " + e);
+                                            }
                                         }
                                     }
                                     catch (Exception e) {
                                         System.out.println("Game add users failed: " + e);
                                     }
+
                                     try {
                                         game.start();
                                     }
                                     catch (Exception e){
                                         System.out.println("Game start failed: " + e);
                                     }
+
                                     gameId = game.getId();
                                     if (gameId != null) {
-                                        try{
-                                            Pool.gameChannelGroups.put(gameId, gameChannelGroup);
-                                            Pool.games.put(gameId, game);
-                                            Pool.players.put(playerId, gameId);
-                                        }
-                                        catch (Exception e){
-                                            System.out.println("Pool TRIO failed: " + e);
+
+                                    }
+
+                                    // We either got a running game now or something went wrong
+                                    try {
+                                        if (game != null) {
+                                            payload = game.asJson();
+
+                                            // broadcast game start to all users
+                                            for (Channel c : game.broadcastBlockingList()) {
+                                                System.out.println("Broadcast to game["+game.getId()+" channel[" + c.id() + "]: gg");
+                                                c.writeAndFlush("=gg" + payload + '\n');
+                                            }
+                                        } else {
+                                            ctx.channel().writeAndFlush("=g" + payload + '\n');
                                         }
                                     }
+                                    catch (Exception e) {
+                                        System.out.println("g post-process failed: " + e);
+                                    }
+
                                 }
                                 else{
                                     // waiting to reach player limit
@@ -155,30 +219,21 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                                 }
                             }
                             else{
-                                try {
-                                    game = Pool.games.get(gameId);
-                                }
-                                catch (Exception e){
-                                    System.out.println("g Pool.games.get failed: " + e);
-                                }
-                            }
-                        }
-                        // We either got a running game now or something went wrong
-                        try {
-                            if (game != null) {
+                                // got a game running
                                 payload = game.asJson();
 
                                 // broadcast game start to all users
-                                ChannelGroup gameChannels = Pool.gameChannelGroups.get(game.getId());
-                                for (Channel c : gameChannels) {
-                                    c.writeAndFlush("=gg" + payload + '\n');
+                                for (Channel c : game.broadcastBlockingList()) {
+                                    if(c == ctx.channel()) {
+                                        System.out.println("Point-transmit to game["+game.getId()+" channel[" + ctx.channel().id() + "]: gg");
+                                        ctx.channel().writeAndFlush("=gg" + payload + '\n');
+                                    }
+                                    else{
+                                        System.out.println("Broadcast to game[" + game.getId() + " channel[" + c.id() + "]: player reconnected [" + playerId + "]");
+                                        c.writeAndFlush("=tr" + playerId + '\n');
+                                    }
                                 }
-                            } else {
-                                ctx.channel().writeAndFlush("=g" + payload + '\n');
                             }
-                        }
-                        catch (Exception e){
-                            System.out.println("g post-process failed: " + e);
                         }
                     }
                     catch (Exception e){

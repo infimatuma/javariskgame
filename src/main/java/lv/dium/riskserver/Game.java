@@ -1,6 +1,8 @@
 package lv.dium.riskserver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.channel.Channel;
+import io.netty.channel.group.DefaultChannelGroup;
 
 import java.util.ArrayList;
 
@@ -23,6 +25,7 @@ public class Game {
     private GameAreasManager areasManager;
 
     private volatile Boolean isLocked = false;
+    private DefaultChannelGroup channelGroup;
 
     public Game() {
         initialize();
@@ -302,4 +305,52 @@ public class Game {
         }
     }
 
+    public void setChannelGroup(DefaultChannelGroup gameChannelGroup) {
+        this.channelGroup = gameChannelGroup;
+    }
+
+    public DefaultChannelGroup broadcastList() {
+        return this.channelGroup;
+    }
+    public DefaultChannelGroup broadcastBlockingList() {
+        DefaultChannelGroup tmp = null;
+        if(lock()){
+            try{
+                tmp = this.channelGroup;
+            }
+            catch (Exception e){
+
+            }
+            unlock();
+        }
+        return tmp;
+    }
+
+    public void replaceOrSetChannel(Channel oldChannel, Channel newChannel) {
+
+        System.out.println("Need to replace channel " + oldChannel.id() + " with "+newChannel.id());
+
+        if(oldChannel == null) return;
+        if(newChannel == null) return;
+
+        if(lock()){
+            System.out.println("Got game lock");
+            try {
+                for (Channel c : broadcastList()) {
+                    if(c.id() == oldChannel.id()) {
+                        broadcastList().remove(c);
+                        System.out.println("Removed one channel");
+                    }
+                }
+                broadcastList().add(newChannel);
+                System.out.println("Added one channel");
+            }
+            catch (Exception e) {
+                System.out.println("Failed replaceOrSetChannel " + e);
+            }
+            unlock();
+            System.out.println("Released game lock");
+        }
+
+    }
 }
