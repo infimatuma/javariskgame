@@ -5,6 +5,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.group.DefaultChannelGroup;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Game {
     private Number id; // Does it really have to be Number?
@@ -19,6 +21,7 @@ public class Game {
 
     private ArrayList<GameArea> areas = new ArrayList<GameArea>();
     private ArrayList<GamePlayer> players = new ArrayList<GamePlayer>();
+    private Map<String, String> playerColor = new HashMap<>();
 
     private ArrayList<String> allColors = new ArrayList<String>();
 
@@ -30,6 +33,7 @@ public class Game {
     public Game() {
         initialize();
     }
+
     public Game(Number gameId) {
         id = gameId;
         initialize();
@@ -43,7 +47,7 @@ public class Game {
      *
      * @return current Game instance
      */
-    private Game initialize(){
+    private Game initialize() {
         allColors = new ArrayList<>();
         allColors.add("red");
         allColors.add("green");
@@ -57,11 +61,12 @@ public class Game {
 
     /**
      * Save game state to Persistance
+     *
      * @return current Game instance
      */
-    public Game save(){
+    public Game save() {
         /* we can only save game if id is set */
-        if(id != null) {
+        if (id != null) {
             Persistance.gameSave(this);
         }
         return this;
@@ -69,35 +74,35 @@ public class Game {
 
     /**
      * Load game state from Persistance
+     *
      * @return current Game instance
      */
-    public Game load() throws Exception{
-        if(id != null) {
+    public Game load() throws Exception {
+        if (id != null) {
             Persistance.gameLoad(this);
         }
         return this;
     }
 
     /* created a new game for provided payer using game set scenario (default scenario exists) */
-    public void start(){
-        if(id == null && scenarioName != ""){
+    public void start() {
+        if (id == null && scenarioName != "") {
             id = JedisConnection.getLink().incr("risk.gameIds");
-            if(id != null) {
+            if (id != null) {
                 initialize();
 
                 currentPhase = "setup";
                 currentPlayer = "waiting-for-players";
 
                 Scenario baseScenario = new Scenario(scenarioName);
-                try{
+                try {
                     baseScenario.load();
 
                     ArrayList<GameScenarioArea> scenarioAreas = baseScenario.getAreas();
                     scenarioAreas.forEach(this::createAreaFromScenarioArea);
 
                     isLoaded = true;
-                }
-                catch(Exception e){
+                } catch (Exception e) {
                     System.out.println("Failed to create game[" + id + "]");
                 }
 
@@ -107,79 +112,74 @@ public class Game {
 
     /* Copy all required properties from GameScenarioArea into new GameArea */
     private void createAreaFromScenarioArea(GameScenarioArea area) {
-        if(area != null){
+        if (area != null) {
             GameArea newArea = new GameArea(area, this);
             areas.add(newArea);
         }
     }
 
-    public String getFreeColor(){
+    public String provideFreeColor() {
         return allColors.get(players.size());
     }
 
-    private String getNewPlayerId(){
+    private String getNewPlayerId() {
         String newID = null;
-        try{
-            if(players != null){
+        try {
+            if (players != null) {
                 newID = String.valueOf(players.size());
-            }
-            else{
+            } else {
                 newID = "0";
             }
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Can not getNewPlayerId: " + e);
         }
         return newID;
     }
 
 
-    private boolean lock(){
-        /* redis.setnx ?*/
-
+    private synchronized boolean lock() {
         try {
             Integer totalWaitTime = 0;
-            while(isLocked){
+            while (isLocked) {
                 Thread.sleep(100);
                 totalWaitTime += 100;
 
-                if(totalWaitTime > 5000){
+                if (totalWaitTime > 5000) {
                     throw new Exception("Failed to acquire game lock (5s).");
                 }
             }
             isLocked = true;
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             System.out.println(e);
             return false;
         }
+
         return true;
     }
 
-    private void unlock(){
+    private void unlock() {
         /* redis.setnx ? */
         isLocked = false;
     }
 
-    private Game applyEffects(ArrayList<GameEffect> effects){
+    private Game applyEffects(ArrayList<GameEffect> effects) {
         /* not sure if this is needed */
         return this;
     }
 
-    public String asJson(){
+    public String asJson() {
         ObjectMapper objectMapper = new ObjectMapper();
         String json = "";
         try {
             json = objectMapper.writeValueAsString(this);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             System.out.println("Failed writeValueAsString for game");
         }
 
         return json;
     }
 
-    public Action handleAction(String action, String payload){
+    public Action handleAction(MpUser user, String action, String payload) {
         // create basic Action out of message
         Action resolution = new Action(action, payload);
         System.out.println("Action instant = " + action + " [ " + payload + "]");
@@ -189,7 +189,7 @@ public class Game {
         We will force re-login if no active game state exists
          */
 
-        if(isLoaded) {
+        if (isLoaded) {
             if (id != null && action != null) {
                 /* should have id set now */
                 /* lock the game before we load it */
@@ -200,11 +200,12 @@ public class Game {
                         /* Following construction should be used to issue changes to client
                          * All valid game effects should be documented in GameEffect class
                          */
+                        // No username-s should be used inside game - every area belongs to one of colors for better abstraction and less validation
+                        String actingColor = playerColor.get(user.getUsername());
+                        resolution.setActingColor(actingColor);
 
-                        System.out.println("Action now = " + action);
                         GameActionHandler actionHandler = new GameActionHandler(this, resolution);
                         actionHandler.process();
-
 
                         /*
                         GameEffect nextEffect = new GameEffect();
@@ -224,12 +225,11 @@ public class Game {
         return resolution;
     }
 
-    public String findColorByIndex(Integer index){
+    public String findColorByIndex(Integer index) {
         String nextColor = null;
-        if(allColors.size() > index){
+        if (allColors.size() > index) {
             nextColor = allColors.get(index);
-        }
-        else{
+        } else {
             nextColor = "";
         }
         return nextColor;
@@ -272,7 +272,7 @@ public class Game {
     }
 
     public GameAreasManager findAreasManager() {
-        if(areasManager == null){
+        if (areasManager == null) {
             areasManager = new GameAreasManager(this);
         }
         return areasManager;
@@ -298,9 +298,11 @@ public class Game {
         try {
             GamePlayer newPlayer = new GamePlayer(user.getUsername(), getNewPlayerId(), this);
             newPlayer.pickColor();
+
             players.add(newPlayer);
-        }
-        catch (Exception e){
+            playerColor.put(newPlayer.getName(), newPlayer.getColor());
+
+        } catch (Exception e) {
             System.out.println("Can not add user to game: " + e);
         }
     }
@@ -312,40 +314,26 @@ public class Game {
     public DefaultChannelGroup broadcastList() {
         return this.channelGroup;
     }
-    public DefaultChannelGroup broadcastBlockingList() {
-        DefaultChannelGroup tmp = null;
-        if(lock()){
-            try{
-                tmp = this.channelGroup;
-            }
-            catch (Exception e){
-
-            }
-            unlock();
-        }
-        return tmp;
-    }
 
     public void replaceOrSetChannel(Channel oldChannel, Channel newChannel) {
 
-        System.out.println("Need to replace channel " + oldChannel.id() + " with "+newChannel.id());
+        System.out.println("Need to replace channel " + oldChannel.id() + " with " + newChannel.id());
 
-        if(oldChannel == null) return;
-        if(newChannel == null) return;
+        if (oldChannel == null) return;
+        if (newChannel == null) return;
 
-        if(lock()){
+        if (lock()) {
             System.out.println("Got game lock");
             try {
                 for (Channel c : broadcastList()) {
-                    if(c.id() == oldChannel.id()) {
+                    if (c.id() == oldChannel.id()) {
                         broadcastList().remove(c);
                         System.out.println("Removed one channel");
                     }
                 }
                 broadcastList().add(newChannel);
                 System.out.println("Added one channel");
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 System.out.println("Failed replaceOrSetChannel " + e);
             }
             unlock();

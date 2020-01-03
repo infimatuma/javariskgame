@@ -19,7 +19,7 @@ public class GamePlayer {
     }
 
     public GamePlayer pickColor(){
-        color = game.getFreeColor();
+        color = game.provideFreeColor();
         return this;
     }
 

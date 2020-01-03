@@ -25,7 +25,7 @@ public class MpServerInitializer extends ChannelInitializer<SocketChannel> {
         ChannelPipeline pipeline = ch.pipeline();
 
         // Add SSL handler first to encrypt and decrypt everything.
-        // In this example, we use a bogus certificate in the server side
+        // We use a bogus certificate in the server side
         // and accept any invalid certificates in the client side.
         // You will need something more complicated to identify both
         // and server in the real world.

@@ -1,7 +1,6 @@
 package lv.dium.riskserver;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.group.ChannelGroup;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -30,6 +30,12 @@ public class GameActionHandler {
                 }
             }
         });
+        
+        encodeEffects();
+    }
+
+    private void encodeEffects() {
+
     }
 
     public Game getGame() {

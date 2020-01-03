@@ -10,7 +10,7 @@ public class Action {
 
     private String action;
     private String payload;
-
+    private String actingColor;
     private ArrayList<GameEffect> effects;
 
     public Action() {
@@ -45,5 +45,13 @@ public class Action {
 
     public void setEffects(ArrayList<GameEffect> effects) {
         this.effects = effects;
+    }
+
+    public String getActingColor() {
+        return actingColor;
+    }
+
+    public void setActingColor(String actingColor) {
+        this.actingColor = actingColor;
     }
 }
