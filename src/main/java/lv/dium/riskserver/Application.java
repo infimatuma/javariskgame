@@ -20,6 +20,28 @@ public class Application {
 			RiskActionProcessors.addAction(findable.value(), cl.getSimpleName());
 		}
 
+		/**
+		 * Copy scenario from server to local Redis instance
+		 */
+		/*
+		JedisConnection.connectRemote();
+		Scenario basic = new Scenario("basic");
+		basic.load();
+		JedisConnection.connect();
+		basic.save();
+		 */
+/*
+		JedisConnection.connectRemote();
+		Scenario basic = new Scenario("small");
+		basic.load();
+		basic.setName("oldsmall");
+		basic.save();
+
+		Scenario main = new Scenario("basic");
+		main.load();
+		main.setName("small");
+		main.save();
+*/
 		System.out.println("Go-go risk!");
 	}
 }

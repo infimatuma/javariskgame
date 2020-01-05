@@ -34,8 +34,8 @@ public class ProcessorMove implements GameActionProcessor{
 
                 ArrayList<GameEffect> effects = new ArrayList<GameEffect>();
 
-                effects.add(new GameEffect("updateAreaStr", sourceAreaID.intValue(), gameActionHandler.game.getAreas().get(sourceAreaID.intValue()).getStr()));
-                effects.add(new GameEffect("updateAreaStr", targetAreaID.intValue(), gameActionHandler.game.getAreas().get(targetAreaID.intValue()).getStr()));
+                effects.add(new GameEffect("updateAreaStr", sourceAreaID.intValue(), String.valueOf(gameActionHandler.game.getAreas().get(sourceAreaID.intValue()).getStr())));
+                effects.add(new GameEffect("updateAreaStr", targetAreaID.intValue(), String.valueOf(gameActionHandler.game.getAreas().get(targetAreaID.intValue()).getStr())));
 
                 System.out.println("Processing Move");
                 gameActionHandler.resolution.addGameEffects(effects);

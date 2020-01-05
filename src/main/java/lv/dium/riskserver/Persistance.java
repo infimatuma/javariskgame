@@ -59,7 +59,7 @@ public class Persistance {
 
             JedisConnection.getLink().hset(areaHashName, "x", a.getX());
             JedisConnection.getLink().hset(areaHashName, "y", a.getY());
-            JedisConnection.getLink().hset(areaHashName, "str", a.getStr());
+            JedisConnection.getLink().hset(areaHashName, "str", String.valueOf(a.getStr()));
             JedisConnection.getLink().hset(areaHashName, "id", a.getId());
             JedisConnection.getLink().hset(areaHashName, "color", a.getColor());
         });
@@ -103,7 +103,7 @@ public class Persistance {
 
                     nextArea.setX(JedisConnection.getLink().hget(areaHashName, "x"));
                     nextArea.setY(JedisConnection.getLink().hget(areaHashName, "y"));
-                    nextArea.setStr(JedisConnection.getLink().hget(areaHashName, "str"));
+                    nextArea.setStr(Integer.valueOf(JedisConnection.getLink().hget(areaHashName, "str")));
                     nextArea.setColor(JedisConnection.getLink().hget(areaHashName, "color"));
 
                     String setName = "SAreaLinks:" + game.getScenarioName()+":" + nextArea.getId();

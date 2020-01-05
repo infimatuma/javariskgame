@@ -7,14 +7,21 @@ public class JedisConnection{
     private static volatile Boolean isLocked = false;
 
     public static void connect(){
-        if(link == null){
-            //link = new Jedis("paris.cloudyhost.info", 6379);
-            //System.out.println("Autentification " + link.auth("Risk#777b&"));
+        //if(link == null){
 
             link = new Jedis("localhost", 6379);
 
             System.out.println("Server Ping: " + link.ping());
-        }
+        //}
+    }
+
+    public static void connectRemote(){
+        //if(link == null){
+            link = new Jedis("paris.cloudyhost.info", 6379);
+            System.out.println("Autentification " + link.auth("Risk#777b&"));
+
+            System.out.println("Server Ping: " + link.ping());
+        //}
     }
 
     public static Jedis getLink() {

@@ -4,16 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
 import io.netty.channel.group.DefaultChannelGroup;
 
+import java.sql.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class Game {
     private Number id; // Does it really have to be Number?
 
     private Boolean isLoaded = false;
 
-    private String scenarioName = "small";
+    private String scenarioName = "basic";
     private Integer maxPlayers = 2;
 
     private String currentPlayer = "";
@@ -101,12 +103,72 @@ public class Game {
                     ArrayList<GameScenarioArea> scenarioAreas = baseScenario.getAreas();
                     scenarioAreas.forEach(this::createAreaFromScenarioArea);
 
+                    randomStart();
+
                     isLoaded = true;
                 } catch (Exception e) {
                     System.out.println("Failed to create game[" + id + "]");
                 }
 
             }
+        }
+    }
+
+    /**
+     * Route random start
+     */
+    private void randomStart() {
+        if(maxPlayers.equals(2)) {
+            randomStartTwoPlayers();
+        }
+    }
+
+    /**
+     * Process random start fro 2 players game
+     */
+    private void randomStartTwoPlayers() {
+        int playersCnt = 2;
+        int unitsPerPlayer = 40;
+        int territoryCnt = areas.size();
+        int[] remainingUnitsPerPlayer = new int[playersCnt];
+
+        System.out.println("Will randomize 2 player game");
+
+        try {
+            for (int i = 0; i < playersCnt; i++) {
+                remainingUnitsPerPlayer[i] = unitsPerPlayer;
+            }
+
+            for (int i = 0; i < territoryCnt; i++) {
+                int playerIndex = new Random().nextInt(2);
+                areas.get(i).setColor(allColors.get(playerIndex));
+                areas.get(i).setStr(1);
+                remainingUnitsPerPlayer[playerIndex]--;
+            }
+
+            for (int playerIndex = 0; playerIndex < playersCnt; playerIndex++) {
+                int tIndex = 0;
+                while (remainingUnitsPerPlayer[playerIndex] > 0) {
+                    GameArea currentArea = areas.get(tIndex);
+
+                    if (allColors.get(playerIndex).equals(currentArea.getColor())) {
+                        int addedValue = new Random().nextInt(4);
+                        if (remainingUnitsPerPlayer[playerIndex] < addedValue) {
+                            addedValue = remainingUnitsPerPlayer[playerIndex];
+                        }
+                        currentArea.addStr(addedValue);
+                        remainingUnitsPerPlayer[playerIndex] = remainingUnitsPerPlayer[playerIndex] - addedValue;
+                    }
+
+                    tIndex++;
+                    if (tIndex >= territoryCnt) {
+                        tIndex = 0;
+                    }
+                }
+            }
+        }
+        catch (Exception e){
+            System.out.println("Randomizing 2 players game failed." + e);
         }
     }
 

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class GameArea {
     String x;
     String y;
-    String str;
+    int str;
     String id;
     String color;
     ArrayList<Number> links = new ArrayList<Number>();
@@ -14,7 +14,7 @@ public class GameArea {
     public GameArea(GameScenarioArea area, Game game) {
         this.x = area.x;
         this.y = area.y;
-        this.str = area.str;
+        this.str = Integer.valueOf(area.str);
         this.id = area.id;
         this.color = area.color;
         this.game = game;
@@ -41,11 +41,11 @@ public class GameArea {
         this.y = y;
     }
 
-    public String getStr() {
+    public int getStr() {
         return str;
     }
 
-    public void setStr(String str) {
+    public void setStr(int str) {
         this.str = str;
     }
 
@@ -67,5 +67,9 @@ public class GameArea {
 
     public ArrayList<Number> getLinks() {
         return links;
+    }
+
+    public void addStr(int addedValue) {
+        this.setStr(this.getStr() + addedValue);
     }
 }

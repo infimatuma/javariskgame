@@ -8,9 +8,9 @@ public class GameAreasManager {
     }
 
     public void moveUnits(Number sourceAreaID, Number targetAreaID, Number units) {
-        Number newSrcStr = Integer.valueOf(game.getAreas().get(sourceAreaID.intValue()).getStr()) - units.intValue();
-        Number newTrgStr = Integer.valueOf(game.getAreas().get(targetAreaID.intValue()).getStr()) + units.intValue();
-        game.getAreas().get(sourceAreaID.intValue()).setStr(newSrcStr.toString());
-        game.getAreas().get(targetAreaID.intValue()).setStr(newTrgStr.toString());
+        int newSrcStr = game.getAreas().get(sourceAreaID.intValue()).getStr() - units.intValue();
+        int newTrgStr = game.getAreas().get(targetAreaID.intValue()).getStr() + units.intValue();
+        game.getAreas().get(sourceAreaID.intValue()).setStr(newSrcStr);
+        game.getAreas().get(targetAreaID.intValue()).setStr(newTrgStr);
     }
 }
