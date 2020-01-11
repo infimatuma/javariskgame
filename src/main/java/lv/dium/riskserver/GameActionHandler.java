@@ -19,7 +19,7 @@ public class GameActionHandler {
             if(resolution.getAction().equals(wiredAction.getActionName())){
                 try{
                     System.out.println("Got processor: [" + wiredAction.getClassName() + "] for action [" + wiredAction.getActionName() + "] ");
-                    Class<?> clazz = Class.forName("hello." + wiredAction.getClassName());
+                    Class<?> clazz = Class.forName("lv.dium.riskserver." + wiredAction.getClassName());
                     GameActionProcessor myActionProcessor = (GameActionProcessor) clazz.newInstance();
                     myActionProcessor.setGameActionHandler(this);
                     myActionProcessor.resolve();

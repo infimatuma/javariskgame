@@ -54,4 +54,5 @@ public class Action {
     public void setActingColor(String actingColor) {
         this.actingColor = actingColor;
     }
+
 }

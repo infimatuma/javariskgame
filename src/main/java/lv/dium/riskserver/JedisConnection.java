@@ -25,9 +25,19 @@ public class JedisConnection{
     }
 
     public static Jedis getLink() {
+        // check if link not yet defined
         if(link == null){
             if(lock()) {
-                JedisConnection.connect();
+                try{
+                    // make sure it is really not defined
+                    if(link == null) {
+                        JedisConnection.connect();
+                    }
+                }
+                catch (Exception e) {
+                    System.out.println("Failed Jedis connection: " + e);
+                }
+                unlock();
             }
         }
         return link;

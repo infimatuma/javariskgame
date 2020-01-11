@@ -24,6 +24,7 @@ dependencies {
     compile group: 'io.netty', name: 'netty-all', version: '4.1.29.Final'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.1'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    compile group: 'com.google.guava', name: 'guava', version: '28.2-jre'
     testCompile("junit:junit")
 }
 

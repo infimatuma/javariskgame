@@ -12,7 +12,9 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.net.InetAddress;
+import java.sql.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -134,7 +136,10 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
             if(authorizedUser != null && authorizedUser.isAuthorized() && command != null) {
                 // greeting command
                 // Not in-game yet
-                if (command.equals("g")) {
+                if (command.equals("l")) {
+                    // it's all ok already
+                }
+                else if (command.equals("g")) {
                     try {
                         String playerNick = t.substring(2, t.length());
 
@@ -254,7 +259,87 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                     // We will expect some kind of universal object so we can broadcast it
                     Game game = Pool.gamesIndexedByPlayer.get(authorizedUser.getUsername());
                     if(game != null) {
-                        Action resolution = game.handleAction(authorizedUser, command, t.substring(2));
+                        try {
+                            Action resolution = game.handleAction(authorizedUser, command, t.substring(2));
+
+                            ArrayList<String> commands = new ArrayList<>();
+                            ArrayList<String> replyCommands = new ArrayList<>();
+                            String lastCommandValue = null;
+                            String currentString = "";
+
+                            try {
+                                if(resolution.getEffects() != null && resolution.getEffects().size()>0) {
+                                    for (GameEffect gameEffect : resolution.getEffects()) {
+                                        String nextCommand = gameEffect.getCommand();
+                                        String nextValue = gameEffect.getValues();
+
+                                        System.out.println("Command ["+nextCommand+"] with body ["+nextValue+"]");
+
+                                        try {
+                                            if (nextCommand != null) {
+                                                if(nextCommand != lastCommandValue) {
+                                                    if(lastCommandValue != null) {
+                                                        commands.add(currentString);
+                                                    }
+
+                                                    currentString = nextCommand;
+                                                    lastCommandValue = nextCommand;
+                                                }
+                                            }
+                                            currentString = currentString + nextValue;
+                                        }
+                                        catch (Exception e){
+                                            System.out.println("Command formatting in-loop error. " + e);
+                                        }
+                                    }
+                                    try {
+                                        if (currentString.length() > 0) {
+                                            commands.add(currentString);
+                                        }
+                                    }
+                                    catch (Exception e){
+                                        System.out.println("Command formatting later error. " + e);
+                                    }
+                                }
+                                else{
+                                    replyCommands.add("=err");
+                                }
+                            }
+                            catch (Exception e){
+                                System.out.println("Failed formatting commands. " + e);
+                            }
+
+                            try {
+                                for (String nextCommand : commands) {
+                                    if (nextCommand != null) {
+                                        for (Channel c : game.broadcastList()) {
+                                            try {
+                                                System.out.println("Broadcast to game[" + game.getId() + " channel[" + c.id() + "]: " + nextCommand);
+                                                c.writeAndFlush(nextCommand + '\n');
+                                            } catch (Exception e) {
+                                                System.out.println("[WARN] Channel write failed during broadcas (" + nextCommand + ") " + e);
+                                            }
+                                        }
+                                    }
+                                }
+                                for (String nextCommand : replyCommands) {
+                                    if (nextCommand != null) {
+                                        try {
+                                            System.out.println("Point-sending to game[" + game.getId() + "] channel[" + ctx.channel().id() + "]: " + nextCommand);
+                                            ctx.channel().writeAndFlush(nextCommand + '\n');
+                                        } catch (Exception e) {
+                                            System.out.println("[WARN] Channel point-sending failed (" + nextCommand + ") " + e);
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception e){
+                                System.out.println("Failed dispatching results. " + e);
+                            }
+                        }
+                        catch (Exception e){
+                            System.out.println("[WARN] Game resolution processing failed. " + e);
+                        }
                     }
                 }
             }

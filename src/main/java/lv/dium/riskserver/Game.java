@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
 import io.netty.channel.group.DefaultChannelGroup;
 
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +18,7 @@ public class Game {
     private Integer maxPlayers = 2;
 
     private String currentPlayer = "";
+    private Integer currentPlayerIndex = 0;
     private String currentPhase = "";
 
     private ArrayList<GameArea> areas = new ArrayList<GameArea>();
@@ -31,6 +31,8 @@ public class Game {
 
     private volatile Boolean isLocked = false;
     private DefaultChannelGroup channelGroup;
+
+    private Number unallocated_units = 0;
 
     public Game() {
         initialize();
@@ -105,16 +107,20 @@ public class Game {
 
                     randomStart();
 
+                    currentPhase = "recruit";
+                    currentPlayerIndex = 0;
+                    currentPlayer = allColors.get(currentPlayerIndex);
+                    unallocated_units = 5;
+
                     isLoaded = true;
                 } catch (Exception e) {
                     System.out.println("Failed to create game[" + id + "]");
                 }
-
             }
         }
     }
 
-    /**
+    /**currentPhase
      * Route random start
      */
     private void randomStart() {
@@ -171,8 +177,52 @@ public class Game {
             System.out.println("Randomizing 2 players game failed." + e);
         }
     }
+    /* check if switching phase is valid */
+    public boolean checkIfValidSwitchPhase() {
+        boolean isOK = true;
 
-    /* Copy all required properties from GameScenarioArea into new GameArea */
+        if(currentPhase.equals("recruit")){
+            // must allocate all units before continue
+            if(unallocated_units.intValue() > 0){
+                isOK = false;
+            }
+        }
+
+        return isOK;
+    }
+
+    /**  Switch phase to next
+     * ONLY performs switch, no validation done here
+     * */
+    public void goNextPhase(){
+        if(currentPhase.equals("setup")){
+            if(maxPlayers > currentPlayerIndex + 1) {
+                currentPlayerIndex++;
+            }
+            else{
+                currentPhase = "recruit";
+                currentPlayerIndex = 0;
+            }
+        }
+        if(currentPhase.equals("recruit")){
+            currentPhase = "attack";
+        }
+        else if(currentPhase.equals("attack")){
+            currentPhase = "reinforce";
+        }
+        else if(currentPhase.equals("reinforce")){
+            if(maxPlayers > currentPlayerIndex + 1) {
+                currentPlayerIndex++;
+                currentPhase = "recruit";
+            }
+            else{
+                currentPlayerIndex = 0;
+                currentPhase = "recruit";
+            }
+        }
+    }
+
+/* Copy all required properties from GameScenarioArea into new GameArea */
     private void createAreaFromScenarioArea(GameScenarioArea area) {
         if (area != null) {
             GameArea newArea = new GameArea(area, this);
@@ -266,8 +316,10 @@ public class Game {
                         String actingColor = playerColor.get(user.getUsername());
                         resolution.setActingColor(actingColor);
 
-                        GameActionHandler actionHandler = new GameActionHandler(this, resolution);
-                        actionHandler.process();
+                        if(validateAction(resolution)) {
+                            GameActionHandler actionHandler = new GameActionHandler(this, resolution);
+                            actionHandler.process();
+                        }
 
                         /*
                         GameEffect nextEffect = new GameEffect();
@@ -285,6 +337,34 @@ public class Game {
         }
         /* return complete Action (should be broadcasted in controller) */
         return resolution;
+    }
+
+    /** validate if provided action is valid at this point and should be processed */
+    private boolean validateAction(Action resolution) {
+        boolean isOk = true;
+
+        if(!resolution.getActingColor().equals(allColors.get(currentPlayerIndex))){
+            System.out.println("Wrong action player: " + resolution.getActingColor() + " != " + allColors.get(currentPlayerIndex));
+            isOk = false;
+        }
+        else if(resolution.getAction().equals("a")){
+            // validate attack permissions
+            if(!currentPhase.equals("attack")){
+                System.out.println("Wrong currentPhase (need attack): " + currentPhase);
+                isOk = false;
+            }
+        }
+        else if(resolution.getAction().equals("r")){
+            // validate recruit permissions
+            if(!currentPhase.equals("recruit")){
+                System.out.println("Wrong currentPhase (need recruit): " + currentPhase);
+                isOk = false;
+            }
+        }
+
+        System.out.println("Action validation: " + String.valueOf(isOk));
+
+        return isOk;
     }
 
     public String findColorByIndex(Integer index) {
@@ -331,6 +411,14 @@ public class Game {
 
     public Integer getMaxPlayers() {
         return maxPlayers;
+    }
+
+    public Number getCurrentPlayerIndex() {
+        return currentPlayerIndex;
+    }
+
+    public Number countUnallocated_units() {
+        return unallocated_units;
     }
 
     public GameAreasManager findAreasManager() {

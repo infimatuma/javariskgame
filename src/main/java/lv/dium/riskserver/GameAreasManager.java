@@ -13,4 +13,10 @@ public class GameAreasManager {
         game.getAreas().get(sourceAreaID.intValue()).setStr(newSrcStr);
         game.getAreas().get(targetAreaID.intValue()).setStr(newTrgStr);
     }
+
+    public Integer addUnits(Integer targetAreaID, Integer units) {
+        Integer newTrgStr = game.getAreas().get(targetAreaID).getStr() + units;
+        game.getAreas().get(targetAreaID).setStr(newTrgStr);
+        return newTrgStr;
+    }
 }
