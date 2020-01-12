@@ -9,8 +9,7 @@ public class GameManipulator {
      * @return - returns link to gameState
      */
     public static GameState create(){
-        GameState g = new GameState();
-        return g;
+        return new GameState();
     }
 
     /** Start the game according to provided scenario
@@ -21,7 +20,7 @@ public class GameManipulator {
      */
     public static GameState start(GameState g, String scenarioName){
 
-        if (g.getId() == null && scenarioName != "") {
+        if (g.getId() == null && !scenarioName.equals("")) {
             try {
                 g.setId(JedisConnection.getLink().incr("risk.gameIds").intValue());
             }
@@ -38,7 +37,19 @@ public class GameManipulator {
                     baseScenario.load();
 
                     ArrayList<GameScenarioArea> scenarioAreas = baseScenario.getAreas();
-                    scenarioAreas.forEach(g::createAreaFromScenarioArea);
+                    for (GameScenarioArea scenarioArea : scenarioAreas) {
+                        if (scenarioArea != null) {
+                            GameArea newArea = new GameArea(
+                                    scenarioArea.getX(),
+                                    scenarioArea.getY(),
+                                    Integer.valueOf(scenarioArea.getStr()),
+                                    Integer.valueOf(scenarioArea.getId()),
+                                    scenarioArea.getColor(),
+                                    scenarioArea.getLinks()
+                            );
+                            g.getAreas().add(newArea);
+                        }
+                    }
 
                     g.randomStart();
 
@@ -48,10 +59,8 @@ public class GameManipulator {
             }
         }
 
-
         return g;
     }
-
 
     /**  Switch phase to next
      * ONLY performs switch, no validation done here
@@ -70,20 +79,23 @@ public class GameManipulator {
                 currentPlayerIndex = 0;
             }
         }
-        if(currentPhase.equals("recruit")){
-            currentPhase = "attack";
-        }
-        else if(currentPhase.equals("attack")){
-            currentPhase = "reinforce";
-        }
-        else if(currentPhase.equals("reinforce")){
-            if(maxPlayers > currentPlayerIndex + 1) {
-                currentPlayerIndex++;
-            }
-            else{
-                currentPlayerIndex = 0;
-            }
-            currentPhase = "recruit";
+        switch (currentPhase) {
+            case "recruit":
+                currentPhase = "attack";
+                break;
+
+            case "attack":
+                currentPhase = "reinforce";
+                break;
+
+            case "reinforce":
+                if (maxPlayers > currentPlayerIndex + 1) {
+                    currentPlayerIndex++;
+                } else {
+                    currentPlayerIndex = 0;
+                }
+                currentPhase = "recruit";
+                break;
         }
 
         g.setCurrentPhase(currentPhase);
@@ -109,9 +121,6 @@ public class GameManipulator {
             try {
                 /* handle actionMessage received by player here */
 
-                /* Following construction should be used to issue changes to client
-                 * All valid game effects should be documented in GameEffect class
-                 */
                 // No username-s should be used inside game - every area belongs to one of colors for better abstraction and less validation
                 //String actingColor = playerColor.get(user.getUsername());
 
@@ -137,7 +146,7 @@ public class GameManipulator {
 
 
     public static ArrayList<GameEffect> processAction(GameState g, Action currentAction){
-        ArrayList<GameEffect> effects = new ArrayList<GameEffect>();
+        ArrayList<GameEffect> effects = new ArrayList<>();
         System.out.println("Will process [" + currentAction.getAction() + "] ");
 
         try {
@@ -150,8 +159,7 @@ public class GameManipulator {
                         GameActionProcessor myActionProcessor = (GameActionProcessor) clazz.newInstance();
                         effects = myActionProcessor.resolve(g, currentAction.getPayload());
                     } catch (Exception e) {
-                        System.out.println("Reflection magic failure! Call priests!");
-                        System.out.println(e);
+                        System.out.println("Reflection magic failure! Call priests!" + e);
                     }
                 }
             }

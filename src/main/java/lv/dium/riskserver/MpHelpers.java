@@ -119,7 +119,7 @@ public class MpHelpers {
             for (int i = 0; i < maximumPlayersPerGame; i++) {
                 MpUser nextUser = usersInQueue.poll();
                 if(nextUser != null) {
-                    gw.g.addUser(nextUser);
+                    gw.g.addUser(nextUser.getUsername());
 
                     // add users most recent channel to game's channel group
                     gameChannelGroup.add(Pool.putAndGetUserChannel(nextUser.getUsername(), null).channel());

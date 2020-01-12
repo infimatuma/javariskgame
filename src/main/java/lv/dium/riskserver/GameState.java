@@ -1,8 +1,5 @@
 package lv.dium.riskserver;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +7,7 @@ import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class GameState {
-    private Integer id; // Does it really have to be Number?
+    private Integer id;
 
     private Integer maxPlayers = 2;
     private String scenarioName;
@@ -19,11 +16,11 @@ public class GameState {
     private Integer currentPlayerIndex = 0; // in-game-id
     private String currentPhase = "";
 
-    private ArrayList<GameArea> areas = new ArrayList<GameArea>();
-    private ArrayList<GamePlayer> players = new ArrayList<GamePlayer>();
+    private ArrayList<GameArea> areas = new ArrayList<>();
+    private ArrayList<GamePlayer> players = new ArrayList<>();
     private Map<String, String> playerColor = new HashMap<>();
 
-    private ArrayList<String> allColors = new ArrayList<String>();
+    private ArrayList<String> allColors;
 
     private Integer unallocated_units = 0;
 
@@ -38,16 +35,6 @@ public class GameState {
         allColors.add("blue");
         allColors.add("yellow");
         allColors.add("purple");
-    }
-
-
-    /** Copy all required properties from GameScenarioArea into new GameArea
-     *  */
-    public void createAreaFromScenarioArea(GameScenarioArea area) {
-        if (area != null) {
-            GameArea newArea = new GameArea(area);
-            areas.add(newArea);
-        }
     }
 
     /**currentPhase
@@ -80,10 +67,10 @@ public class GameState {
                 remainingUnitsPerPlayer[i] = unitsPerPlayer;
             }
 
-            for (int i = 0; i < territoryCnt; i++) {
+            for (GameArea area : areas) {
                 int playerIndex = new Random().nextInt(2);
-                areas.get(i).setColor(allColors.get(playerIndex));
-                areas.get(i).setStr(1);
+                area.setColor(allColors.get(playerIndex));
+                area.setStr(1);
                 remainingUnitsPerPlayer[playerIndex]--;
             }
 
@@ -143,22 +130,8 @@ public class GameState {
         return newID;
     }
 
-    /** Return GameState JSON-formatted String
-     * null-safe
-     * */
-    public String asJson() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = "";
-        try {
-            json = objectMapper.writeValueAsString(this);
-        } catch (Exception e) {
-            System.out.println("Failed writeValueAsString for GameState");
-        }
-        return json;
-    }
-
     public String findColorByIndex(Integer index) {
-        String nextColor = null;
+        String nextColor;
         if (allColors.size() > index) {
             nextColor = allColors.get(index);
         } else {
@@ -199,13 +172,11 @@ public class GameState {
         return currentPlayerIndex;
     }
 
-    @JsonIgnore
-    public String getCurrentPlayerColor(){
+    public String findCurrentPlayerColor(){
         return allColors.get(currentPlayerIndex);
     }
 
-    @JsonIgnore
-    public String getColorByUsername(String username){
+    public String findColorByUsername(String username){
         return playerColor.get(username);
     }
 
@@ -233,9 +204,9 @@ public class GameState {
         this.scenarioName = scenarioName;
     }
 
-    public void addUser(MpUser user) {
+    public void addUser(String username) {
         try {
-            GamePlayer newPlayer = new GamePlayer(user.getUsername(), getNewPlayerId(), provideFreeColor());
+            GamePlayer newPlayer = new GamePlayer(username, getNewPlayerId(), provideFreeColor());
 
             players.add(newPlayer);
             playerColor.put(newPlayer.getName(), newPlayer.getColor());

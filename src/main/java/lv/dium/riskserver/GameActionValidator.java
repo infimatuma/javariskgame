@@ -30,7 +30,7 @@ public class GameActionValidator {
         boolean isOk = true;
 
         String currentPhase = g.getCurrentPhase();
-        String currentPlayerColor = g.getCurrentPlayerColor();
+        String currentPlayerColor = g.findCurrentPlayerColor();
 
         if(!testedAction.getActingColor().equals(currentPlayerColor)){
             System.out.println("Wrong action player: " + testedAction.getActingColor() + " != " + currentPlayerColor);

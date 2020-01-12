@@ -114,7 +114,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                                     // We either got a running game now or something went wrong
                                     try {
                                         if (gw.g != null) {
-                                            commandsToWrite.add(new MpCommand("=gg" + gw.g.asJson(), "all"));
+                                            commandsToWrite.add(new MpCommand("=gg" + gw.gameAsJson(), "all"));
                                         } else {
                                             commandsToWrite.add(new MpCommand("=gf", "self"));
                                         }
@@ -127,7 +127,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                                     commandsToWrite.add(new MpCommand("=gw", "self"));
                                 }
                             } else { // got a game running
-                                commandsToWrite.add(new MpCommand("=gg" + gw.g.asJson(), "self"));
+                                commandsToWrite.add(new MpCommand("=gg" + gw.gameAsJson(), "self"));
                                 commandsToWrite.add(new MpCommand("=tr" + playerId, "others"));
                             }
                         }
@@ -142,7 +142,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                         try {
                             Action resolution = GameManipulator.handleAction(
                                     gw.g, // game state
-                                    gw.g.getColorByUsername(authorizedUser.getUsername()), // current user
+                                    gw.g.findColorByUsername(authorizedUser.getUsername()), // current user
                                     command,
                                     payload
                             );

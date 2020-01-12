@@ -1,6 +1,6 @@
 package lv.dium.riskserver;
 
-public class MpUser extends Object {
+public class MpUser {
     private String username;
     private String password;
     private String id;
@@ -60,7 +60,9 @@ public class MpUser extends Object {
                 is = true;
             }
         }
-        catch (Exception e){}
+        catch (Exception e){
+            System.out.println("Failed MpUser equals: " + e);
+        }
         return is;
     }
 }

@@ -8,16 +8,17 @@ public class GameArea {
     Integer str;
     Integer id;
     String color;
-    ArrayList<Number> links = new ArrayList<Number>();
+    ArrayList<Number> links = new ArrayList<>();
 
-    public GameArea(GameScenarioArea area) {
-        this.x = area.x;
-        this.y = area.y;
-        this.str = Integer.valueOf(area.str);
-        this.id = Integer.valueOf(area.id);
-        this.color = area.color;
-        this.links = area.links;
+    public GameArea(String x, String y, Integer str, Integer id, String color, ArrayList<Number> links) {
+        this.x = x;
+        this.y = y;
+        this.str = str;
+        this.id = id;
+        this.color = color;
+        this.links = links;
     }
+
     public GameArea(Integer id) {
         this.id = id;
     }

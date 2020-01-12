@@ -1,5 +1,6 @@
 package lv.dium.riskserver;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
 import io.netty.channel.group.DefaultChannelGroup;
 
@@ -47,5 +48,19 @@ public class GameWrapper {
             g.lock.unlock();
             System.out.println("Released game lock");
         }
+    }
+    /** Return GameState JSON-formatted String
+     * null-safe
+     * */
+    public String gameAsJson() {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = "";
+        try {
+            json = objectMapper.writeValueAsString(g);
+        } catch (Exception e) {
+            System.out.println("Failed writeValueAsString for GameState");
+        }
+        return json;
     }
 }
