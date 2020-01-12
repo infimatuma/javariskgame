@@ -30,7 +30,7 @@ public class MpHelpers {
         try {
             if (effects != null && effects.size() > 0) {
                 for (GameEffect gameEffect : effects) {
-                    String nextCommand = gameEffect.getCommand();
+                    String nextCommand = gameEffect.getCommandLine();
                     String nextValue = gameEffect.getValues();
 
                     System.out.println("Command [" + nextCommand + "] with body [" + nextValue + "]");

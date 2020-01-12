@@ -7,6 +7,7 @@ public class GameEffect {
     private Integer areaID;
     private String newValue;
 
+    private String commandLine;
     private String command;
     private String values;
 
@@ -16,8 +17,21 @@ public class GameEffect {
         this.newValue = newValue;
 
         if(action.equals("recruit")){
-            command = "=r";
+            command = "r";
+            commandLine = "=" + command;
             values = Strings.padStart(String.valueOf(areaID), 2, '0') + Strings.padStart(String.valueOf(newValue), 2, '0');
+        }
+    }
+    public GameEffect(String commandLine, String values){
+        this.commandLine = commandLine;
+        this.values = values;
+
+        command = commandLine.substring(1,2);
+
+        if(command.equals("r")){
+            action = "recruit";
+            areaID = Integer.valueOf(values.substring(0,2));
+            newValue = values.substring(2,4);
         }
     }
 
@@ -25,28 +39,16 @@ public class GameEffect {
         return action;
     }
 
-    public void setAction(String action) {
-        this.action = action;
-    }
-
     public Integer getAreaID() {
         return areaID;
-    }
-
-    public void setAreaID(Integer areaID) {
-        this.areaID = areaID;
     }
 
     public String getNewValue() {
         return newValue;
     }
 
-    public void setNewValue(String newValue) {
-        this.newValue = newValue;
-    }
-
-    public String getCommand() {
-        return command;
+    public String getCommandLine() {
+        return commandLine;
     }
 
     public String getValues() {
