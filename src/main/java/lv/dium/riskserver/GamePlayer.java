@@ -1,26 +1,14 @@
 package lv.dium.riskserver;
 
-/* Redis: player:{login} = currentGameId */
-
 public class GamePlayer {
-    Game game;
-    String name;
-    String color;
-    String id;
+    final String name;
+    final String color;
+    final Integer id;
 
-    public GamePlayer(String name, String id, Game game){
-        this.game = game;
+    public GamePlayer(String name, Integer id, String color){
+        this.color = color;
         this.name = name;
         this.id = id;
-    }
-    public GamePlayer(String id, Game game){
-        this.game = game;
-        this.id = id;
-    }
-
-    public GamePlayer pickColor(){
-        color = game.provideFreeColor();
-        return this;
     }
 
     public String getName() {
@@ -31,15 +19,8 @@ public class GamePlayer {
         return color;
     }
 
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
 }

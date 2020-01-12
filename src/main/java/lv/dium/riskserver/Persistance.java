@@ -16,7 +16,7 @@ public class Persistance {
      *
      * @return current Game instance
      */
-    public static void gameSave(Game game){
+    public static void gameSave(GameState game){
         Number id = game.getId();
         if(id == null){
             return;
@@ -42,7 +42,7 @@ public class Persistance {
                 System.out.println("Save [" + playerHashName + "]");
 
                 JedisConnection.getLink().hset(playerHashName, "color", p.getColor());
-                JedisConnection.getLink().hset(playerHashName, "id", p.getId());
+                JedisConnection.getLink().hset(playerHashName, "id", p.getId().toString());
                 JedisConnection.getLink().hset(playerHashName, "name", p.getName());
             });
         }
@@ -60,7 +60,7 @@ public class Persistance {
             JedisConnection.getLink().hset(areaHashName, "x", a.getX());
             JedisConnection.getLink().hset(areaHashName, "y", a.getY());
             JedisConnection.getLink().hset(areaHashName, "str", String.valueOf(a.getStr()));
-            JedisConnection.getLink().hset(areaHashName, "id", a.getId());
+            JedisConnection.getLink().hset(areaHashName, "id", a.getId().toString());
             JedisConnection.getLink().hset(areaHashName, "color", a.getColor());
         });
         }
@@ -78,7 +78,7 @@ public class Persistance {
      *
      * @return current Game instance
      */
-    public static void gameLoad(Game game) {
+    public static void gameLoad(GameState game) {
         Number id = game.getId();
 
         if(id == null){
@@ -97,7 +97,7 @@ public class Persistance {
                 Number AreasSize = valueOf(gameAreasCnt);
 
                 IntStream.range(0, AreasSize.intValue()).forEach(i -> {
-                    GameArea nextArea = new GameArea(String.valueOf(i), game);
+                    GameArea nextArea = new GameArea(i);
 
                     String areaHashName = "GArea:" + game.getId() + ":" + nextArea.getId();
 
@@ -130,21 +130,24 @@ public class Persistance {
                 Number PlayersSize = valueOf(gamePlayersCnt);
 
                 IntStream.range(0, PlayersSize.intValue()).forEach(i -> {
-                    GamePlayer nextPlayer = new GamePlayer(String.valueOf(i), game);
-
                     String playerHashName = "GPlayer:" + game.getId() + ":" + id;
+
+                    String color;
+                    String name;
+
+                    color = JedisConnection.getLink().hget(playerHashName, "color");
+                    if(color == null){
+                        color = game.findColorByIndex(i);
+                    }
+
+                    name = JedisConnection.getLink().hget(playerHashName, "name");
+                    if(name == null){
+                        name = "JohnDoe";
+                    }
+
+                    GamePlayer nextPlayer = new GamePlayer(name, i, color);
+
                     System.out.println("Load [" + playerHashName + "]");
-
-                    nextPlayer.setColor(JedisConnection.getLink().hget(playerHashName, "color"));
-
-                    if(nextPlayer.getColor() == null){
-                        nextPlayer.setColor(game.findColorByIndex(Integer.valueOf(nextPlayer.getId())));
-                    }
-
-                    nextPlayer.setName(JedisConnection.getLink().hget(playerHashName, "name"));
-                    if(nextPlayer.getName() == null){
-                        nextPlayer.setName("JohnDoe");
-                    }
 
                     game.getPlayers().add(nextPlayer);
                 });
@@ -157,7 +160,6 @@ public class Persistance {
             game.setMaxPlayers(valueOf(JedisConnection.getLink().hget(gameKey, "maxPlayers")));
             game.setCurrentPhase(JedisConnection.getLink().hget(gameKey, "phase"));
             game.setCurrentPlayer(JedisConnection.getLink().hget(gameKey, "player"));
-            game.setLoaded(true);
 
         } catch (Exception e) {
             System.out.println("Game load exception");

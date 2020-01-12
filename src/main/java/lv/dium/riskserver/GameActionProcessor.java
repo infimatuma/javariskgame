@@ -1,12 +1,7 @@
 package lv.dium.riskserver;
 
+import java.util.ArrayList;
+
 public interface GameActionProcessor {
-    GameActionHandler gameActionHandler = null;
-
-    default void resolve(){
-
-    }
-    default void setGameActionHandler(GameActionHandler gameActionHandler){
-
-    }
+    ArrayList<GameEffect> resolve(GameState g, String payload);
 }

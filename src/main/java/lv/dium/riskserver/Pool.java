@@ -8,7 +8,7 @@ import java.util.Map;
 /* need some way to make this thread safe */
 
 public class Pool {
-    public static Map<String, Game> gamesIndexedByPlayer = new HashMap<>();
+    public static Map<String, GameWrapper> gamesIndexedByPlayer = new HashMap<>();
     public static Map<String, ChannelHandlerContext> userChannels = new HashMap<String, io.netty.channel.ChannelHandlerContext>();
 
     public static synchronized ChannelHandlerContext putAndGetUserChannel(String username, ChannelHandlerContext newChannelContext) {

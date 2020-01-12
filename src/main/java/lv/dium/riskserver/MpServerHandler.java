@@ -12,9 +12,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.net.InetAddress;
-import java.sql.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -90,7 +88,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                         }
 
                         // If ongoing game exists
-                        Game existingGame = Pool.gamesIndexedByPlayer.get(user.getUsername());
+                        GameWrapper existingGameWrapper = Pool.gamesIndexedByPlayer.get(user.getUsername());
 
                         // If old channel for the same user exists - close it
                         if (oldCtx != null) {
@@ -98,9 +96,9 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                             // only close it if this is a different channel
                             if (oldCtx.channel().id() != ctx.channel().id()) {
                                 System.out.println("Will close old connection");
-                                if (existingGame != null) {
+                                if (existingGameWrapper != null) {
                                     System.out.println("We have a game - so will call replaceOrSetChannel");
-                                    existingGame.replaceOrSetChannel(oldCtx.channel(), ctx.channel());
+                                    existingGameWrapper.replaceOrSetChannel(oldCtx.channel(), ctx.channel());
                                 }
                                 System.out.println("Writingf [fc] to old channel and closing");
                                 oldCtx.channel().writeAndFlush("=fcNewChannel" + '\n');
@@ -110,7 +108,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                             }
                         }
 
-                        if (existingGame != null) {
+                        if (existingGameWrapper != null) {
                             // return login succeed, ongoing game exists
                             ctx.channel().writeAndFlush("=lg" + '\n');
                         } else {
@@ -145,18 +143,20 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
 
                         String playerId = authorizedUser.getUsername();
 
-                        Game game = null;
+                        //Game game = null;
+                        GameState g = null;
+                        GameWrapper gw = null;
                         String payload = "f";
 
                         synchronized (this) {
                             try {
-                                game = Pool.gamesIndexedByPlayer.get(playerId);
+                                gw = Pool.gamesIndexedByPlayer.get(playerId);
                             }
                             catch (Exception e){
                                 System.out.println("Pool.player.get failed: " + e);
                             }
 
-                            if (game == null) { // handle queue pool
+                            if (gw == null) { // handle queue pool
                                 if(!usersInQueue.contains(authorizedUser)) {
                                     usersInQueue.add(authorizedUser);
                                     System.out.println("Pool.add: " + authorizedUser.getUsername());
@@ -164,22 +164,22 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
 
                                 // Create a game if enough users
                                 if (usersInQueue.size() >= maximumPlayersPerGame) {
-                                    game = new Game();
+                                    gw = new GameWrapper();
 
                                     // create game's channel group
                                     DefaultChannelGroup gameChannelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-                                    game.setChannelGroup(gameChannelGroup);
+                                    gw.setChannelGroup(gameChannelGroup);
 
                                     try {
                                         for (int i = 0; i < maximumPlayersPerGame; i++) {
                                             MpUser nextUser = usersInQueue.poll();
-                                            game.addUser(nextUser);
+                                            gw.g.addUser(nextUser);
 
                                             // add users most recent channel to game's channel group
                                             gameChannelGroup.add(Pool.putAndGetUserChannel(nextUser.getUsername(), null).channel());
 
                                             try{
-                                                Pool.gamesIndexedByPlayer.put(nextUser.getUsername(), game);
+                                                Pool.gamesIndexedByPlayer.put(nextUser.getUsername(), gw);
                                                 System.out.println("Game index updated for player " + nextUser.getUsername());
                                             }
                                             catch (Exception e){
@@ -192,7 +192,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                                     }
 
                                     try {
-                                        game.start();
+                                        GameManipulator.start(gw.g, "basic");
                                     }
                                     catch (Exception e){
                                         System.out.println("Game start failed: " + e);
@@ -200,13 +200,13 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
 
                                     // We either got a running game now or something went wrong
                                     try {
-                                        if (game != null) {
-                                            payload = game.asJson();
+                                        if (gw.g != null) {
+                                            payload = gw.g.asJson();
 
                                             // broadcast game start to all users
-                                            for (Channel c : game.broadcastList()) {
+                                            for (Channel c : gw.broadcastList()) {
                                                 try {
-                                                    System.out.println("Broadcast to game[" + game.getId() + " channel[" + c.id() + "]: gg");
+                                                    System.out.println("Broadcast to game[" + gw.g.getId() + " channel[" + c.id() + "]: gg");
                                                     c.writeAndFlush("=gg" + payload + '\n');
                                                 }
                                                 catch (Exception e){
@@ -229,17 +229,17 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                             }
                             else{
                                 // got a game running
-                                payload = game.asJson();
+                                payload = gw.g.asJson();
 
                                 // broadcast game start to all users
-                                for (Channel c : game.broadcastList()) {
+                                for (Channel c : gw.broadcastList()) {
                                     try {
                                         if(c == ctx.channel()) {
-                                            System.out.println("Point-transmit to game["+game.getId()+" channel[" + ctx.channel().id() + "]: gg");
+                                            System.out.println("Point-transmit to game[" + gw.g.getId() + " channel[" + ctx.channel().id() + "]: gg");
                                             ctx.channel().writeAndFlush("=gg" + payload + '\n');
                                         }
                                         else{
-                                            System.out.println("Broadcast to game[" + game.getId() + " channel[" + c.id() + "]: player reconnected [" + playerId + "]");
+                                            System.out.println("Broadcast to game[" + gw.g.getId() + " channel[" + c.id() + "]: player reconnected [" + playerId + "]");
                                             c.writeAndFlush("=tr" + playerId + '\n');
                                         }
                                     }
@@ -257,10 +257,13 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                 else {
                     // Any other command will be matched against game processors if game exists
                     // We will expect some kind of universal object so we can broadcast it
-                    Game game = Pool.gamesIndexedByPlayer.get(authorizedUser.getUsername());
-                    if(game != null) {
+                    GameWrapper gw = Pool.gamesIndexedByPlayer.get(authorizedUser.getUsername());
+                    if(gw.g != null) {
                         try {
-                            Action resolution = game.handleAction(authorizedUser, command, t.substring(2));
+
+                            Action resolution = GameManipulator.handleAction(gw.g,
+                                    gw.g.getColorByUsername(authorizedUser.getUsername()),
+                                    command, t.substring(2));
 
                             ArrayList<String> commands = new ArrayList<>();
                             ArrayList<String> replyCommands = new ArrayList<>();
@@ -312,9 +315,9 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                             try {
                                 for (String nextCommand : commands) {
                                     if (nextCommand != null) {
-                                        for (Channel c : game.broadcastList()) {
+                                        for (Channel c : gw.broadcastList()) {
                                             try {
-                                                System.out.println("Broadcast to game[" + game.getId() + " channel[" + c.id() + "]: " + nextCommand);
+                                                System.out.println("Broadcast to game[" + gw.g.getId() + " channel[" + c.id() + "]: " + nextCommand);
                                                 c.writeAndFlush(nextCommand + '\n');
                                             } catch (Exception e) {
                                                 System.out.println("[WARN] Channel write failed during broadcas (" + nextCommand + ") " + e);
@@ -325,7 +328,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                                 for (String nextCommand : replyCommands) {
                                     if (nextCommand != null) {
                                         try {
-                                            System.out.println("Point-sending to game[" + game.getId() + "] channel[" + ctx.channel().id() + "]: " + nextCommand);
+                                            System.out.println("Point-sending to game[" + gw.g.getId() + "] channel[" + ctx.channel().id() + "]: " + nextCommand);
                                             ctx.channel().writeAndFlush(nextCommand + '\n');
                                         } catch (Exception e) {
                                             System.out.println("[WARN] Channel point-sending failed (" + nextCommand + ") " + e);

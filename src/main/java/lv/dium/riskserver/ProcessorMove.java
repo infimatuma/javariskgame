@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 @RiskActionProcessor("m")
 public class ProcessorMove implements GameActionProcessor{
-    private GameActionHandler gameActionHandler;
     private Integer targetAreaID;
     private Integer sourceAreaID;
     private Integer units;
@@ -16,8 +15,10 @@ public class ProcessorMove implements GameActionProcessor{
     }
 
     @Override
-    public void resolve(){
+    public ArrayList<GameEffect> resolve(GameState g, String payload){
+        ArrayList<GameEffect> effects = new ArrayList<GameEffect>();
         try {
+            /*
             parsePayload(gameActionHandler.resolution.getPayload());
 
             if(targetAreaID == null){
@@ -40,15 +41,15 @@ public class ProcessorMove implements GameActionProcessor{
                 System.out.println("Processing Move");
                 gameActionHandler.resolution.addGameEffects(effects);
             }
+
+             */
         }
         catch (Exception e) {
             System.out.println("Failed to process ProcessorMove!");
             System.out.println(e);
         }
+
+        return effects;
     }
 
-    @Override
-    public void setGameActionHandler(GameActionHandler gameActionHandler) {
-        this.gameActionHandler = gameActionHandler;
-    }
 }

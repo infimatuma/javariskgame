@@ -5,24 +5,21 @@ import java.util.ArrayList;
 public class GameArea {
     String x;
     String y;
-    int str;
-    String id;
+    Integer str;
+    Integer id;
     String color;
     ArrayList<Number> links = new ArrayList<Number>();
-    Game game;
 
-    public GameArea(GameScenarioArea area, Game game) {
+    public GameArea(GameScenarioArea area) {
         this.x = area.x;
         this.y = area.y;
         this.str = Integer.valueOf(area.str);
-        this.id = area.id;
+        this.id = Integer.valueOf(area.id);
         this.color = area.color;
-        this.game = game;
         this.links = area.links;
     }
-    public GameArea(String id, Game game) {
+    public GameArea(Integer id) {
         this.id = id;
-        this.game = game;
     }
 
     public String getX() {
@@ -45,15 +42,11 @@ public class GameArea {
         return str;
     }
 
-    public void setStr(int str) {
-        this.str = str;
-    }
-
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -67,6 +60,10 @@ public class GameArea {
 
     public ArrayList<Number> getLinks() {
         return links;
+    }
+
+    public void setStr(int str) {
+        this.str = str;
     }
 
     public void addStr(int addedValue) {

@@ -6,7 +6,6 @@ import java.util.Map;
 
 @RiskActionProcessor("r")
 public class ProcessorRecruit implements GameActionProcessor{
-    private GameActionHandler gameActionHandler;
     private Map<Integer, Integer> affectedAreas = new HashMap<>();
     private Integer assignedUnits = 0;
 
@@ -59,36 +58,31 @@ public class ProcessorRecruit implements GameActionProcessor{
     }
 
     @Override
-    public void resolve(){
+    public ArrayList<GameEffect> resolve(GameState g, String payload){
+        ArrayList<GameEffect> effects = new ArrayList<GameEffect>();
+
         try {
-            parsePayload(gameActionHandler.resolution.getPayload());
+            parsePayload(payload);
 
             if(affectedAreas.size() == 0){
                 System.out.println("ERROR: ProcessorRecruit requires at least one assignment!");
             }
-            else if(assignedUnits != gameActionHandler.game.countUnallocated_units()){
+            else if(assignedUnits != g.countUnallocated_units()){
                 System.out.println("ERROR: ProcessorRecruit ask for all units to be allocated in one command!");
             }
             else{
-                ArrayList<GameEffect> effects = new ArrayList<GameEffect>();
-
                 affectedAreas.forEach((Integer k, Integer v) ->{
-                    Integer newStr = gameActionHandler.game.findAreasManager().addUnits(k, v);
+                    Integer newStr = g.countAreaStr(k) + v;
                     effects.add(new GameEffect("recruit", k, String.valueOf(newStr)));
                 });
-
-                System.out.println("Processing recruit");
-                gameActionHandler.resolution.addGameEffects(effects);
+                System.out.println("Processed recruit");
             }
         }
         catch (Exception e) {
             System.out.println("Failed to process ProcessorRecruit!");
             System.out.println(e);
         }
-    }
 
-    @Override
-    public void setGameActionHandler(GameActionHandler gameActionHandler) {
-        this.gameActionHandler = gameActionHandler;
+        return effects;
     }
 }
