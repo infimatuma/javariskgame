@@ -22,9 +22,6 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
     static final ChannelGroup allChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     static final ChannelGroup authorizedChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     private LoginHandler loginHandler;
-    static final LinkedBlockingQueue<MpUser> usersInQueue = new LinkedBlockingQueue<>();
-
-    static final int maximumPlayersPerGame = 2;
 
     final static AttributeKey<MpUser> MP_USER_ATTRIBUTE_KEY = AttributeKey.valueOf("authorized_user");
 
@@ -140,14 +137,11 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                 else if (command.equals("g")) {
                     try {
                         String playerNick = t.substring(2, t.length());
-
                         String playerId = authorizedUser.getUsername();
-
-                        //Game game = null;
-                        GameState g = null;
                         GameWrapper gw = null;
-                        String payload = "f";
+                        ArrayList<MpCommand> commands = new ArrayList<>();
 
+                        // Find/create game OR put player into queue
                         synchronized (this) {
                             try {
                                 gw = Pool.gamesIndexedByPlayer.get(playerId);
@@ -157,64 +151,18 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                             }
 
                             if (gw == null) { // handle queue pool
-                                if(!usersInQueue.contains(authorizedUser)) {
-                                    usersInQueue.add(authorizedUser);
-                                    System.out.println("Pool.add: " + authorizedUser.getUsername());
-                                }
+                                MpHelpers.passUserToQueue(authorizedUser);
 
                                 // Create a game if enough users
-                                if (usersInQueue.size() >= maximumPlayersPerGame) {
-                                    gw = new GameWrapper();
-
-                                    // create game's channel group
-                                    DefaultChannelGroup gameChannelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-                                    gw.setChannelGroup(gameChannelGroup);
-
-                                    try {
-                                        for (int i = 0; i < maximumPlayersPerGame; i++) {
-                                            MpUser nextUser = usersInQueue.poll();
-                                            gw.g.addUser(nextUser);
-
-                                            // add users most recent channel to game's channel group
-                                            gameChannelGroup.add(Pool.putAndGetUserChannel(nextUser.getUsername(), null).channel());
-
-                                            try{
-                                                Pool.gamesIndexedByPlayer.put(nextUser.getUsername(), gw);
-                                                System.out.println("Game index updated for player " + nextUser.getUsername());
-                                            }
-                                            catch (Exception e){
-                                                System.out.println("gamesIndexedByPlayer failed: " + e);
-                                            }
-                                        }
-                                    }
-                                    catch (Exception e) {
-                                        System.out.println("Game add users failed: " + e);
-                                    }
-
-                                    try {
-                                        GameManipulator.start(gw.g, "basic");
-                                    }
-                                    catch (Exception e){
-                                        System.out.println("Game start failed: " + e);
-                                    }
+                                if (MpHelpers.queueFilled()) {
+                                    gw = MpHelpers.createGame();
 
                                     // We either got a running game now or something went wrong
                                     try {
-                                        if (gw.g != null) {
-                                            payload = gw.g.asJson();
-
-                                            // broadcast game start to all users
-                                            for (Channel c : gw.broadcastList()) {
-                                                try {
-                                                    System.out.println("Broadcast to game[" + gw.g.getId() + " channel[" + c.id() + "]: gg");
-                                                    c.writeAndFlush("=gg" + payload + '\n');
-                                                }
-                                                catch (Exception e){
-                                                    System.out.println("[WARN] Channel write failed during broadcast. " + e);
-                                                }
-                                            }
+                                        if (gw != null && gw.g != null) {
+                                            commands.add(new MpCommand("=gg" + gw.g.asJson(), "all"));
                                         } else {
-                                            ctx.channel().writeAndFlush("=g" + payload + '\n');
+                                            commands.add(new MpCommand("=gf", "self"));
                                         }
                                     }
                                     catch (Exception e) {
@@ -224,30 +172,22 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                                 }
                                 else{
                                     // waiting to reach player limit
-                                    payload = "w";
+                                    commands.add(new MpCommand("=gw", "self"));
                                 }
                             }
-                            else{
-                                // got a game running
-                                payload = gw.g.asJson();
+                            else{ // got a game running
+                                commands.add(new MpCommand("=gg" + gw.g.asJson(), "self"));
+                                commands.add(new MpCommand("=tr" + playerId, "others"));
+                            }
+                        }
 
-                                // broadcast game start to all users
-                                for (Channel c : gw.broadcastList()) {
-                                    try {
-                                        if(c == ctx.channel()) {
-                                            System.out.println("Point-transmit to game[" + gw.g.getId() + " channel[" + ctx.channel().id() + "]: gg");
-                                            ctx.channel().writeAndFlush("=gg" + payload + '\n');
-                                        }
-                                        else{
-                                            System.out.println("Broadcast to game[" + gw.g.getId() + " channel[" + c.id() + "]: player reconnected [" + playerId + "]");
-                                            c.writeAndFlush("=tr" + playerId + '\n');
-                                        }
-                                    }
-                                    catch (Exception e){
-                                        System.out.println("[WARN] Channel write failed during broadcast. " + e);
-                                    }
-                                }
-                            }
+                        // Broadcast commands if any
+                        if(commands.size() > 0) {
+                            MpHelpers.broadcastCommands(
+                                    commands, // commands
+                                    ctx, // current user's channel context
+                                    (gw != null)? gw.broadcastList() : null // current game's broadcast list
+                            );
                         }
                     }
                     catch (Exception e){
@@ -260,85 +200,18 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                     GameWrapper gw = Pool.gamesIndexedByPlayer.get(authorizedUser.getUsername());
                     if(gw.g != null) {
                         try {
+                            Action resolution = GameManipulator.handleAction(
+                                    gw.g, // game state
+                                    gw.g.getColorByUsername(authorizedUser.getUsername()), // current user
+                                    command, // command
+                                    t.substring(2) // payload
+                            );
 
-                            Action resolution = GameManipulator.handleAction(gw.g,
-                                    gw.g.getColorByUsername(authorizedUser.getUsername()),
-                                    command, t.substring(2));
-
-                            ArrayList<String> commands = new ArrayList<>();
-                            ArrayList<String> replyCommands = new ArrayList<>();
-                            String lastCommandValue = null;
-                            String currentString = "";
-
-                            try {
-                                if(resolution.getEffects() != null && resolution.getEffects().size()>0) {
-                                    for (GameEffect gameEffect : resolution.getEffects()) {
-                                        String nextCommand = gameEffect.getCommand();
-                                        String nextValue = gameEffect.getValues();
-
-                                        System.out.println("Command ["+nextCommand+"] with body ["+nextValue+"]");
-
-                                        try {
-                                            if (nextCommand != null) {
-                                                if(nextCommand != lastCommandValue) {
-                                                    if(lastCommandValue != null) {
-                                                        commands.add(currentString);
-                                                    }
-
-                                                    currentString = nextCommand;
-                                                    lastCommandValue = nextCommand;
-                                                }
-                                            }
-                                            currentString = currentString + nextValue;
-                                        }
-                                        catch (Exception e){
-                                            System.out.println("Command formatting in-loop error. " + e);
-                                        }
-                                    }
-                                    try {
-                                        if (currentString.length() > 0) {
-                                            commands.add(currentString);
-                                        }
-                                    }
-                                    catch (Exception e){
-                                        System.out.println("Command formatting later error. " + e);
-                                    }
-                                }
-                                else{
-                                    replyCommands.add("=err");
-                                }
-                            }
-                            catch (Exception e){
-                                System.out.println("Failed formatting commands. " + e);
-                            }
-
-                            try {
-                                for (String nextCommand : commands) {
-                                    if (nextCommand != null) {
-                                        for (Channel c : gw.broadcastList()) {
-                                            try {
-                                                System.out.println("Broadcast to game[" + gw.g.getId() + " channel[" + c.id() + "]: " + nextCommand);
-                                                c.writeAndFlush(nextCommand + '\n');
-                                            } catch (Exception e) {
-                                                System.out.println("[WARN] Channel write failed during broadcas (" + nextCommand + ") " + e);
-                                            }
-                                        }
-                                    }
-                                }
-                                for (String nextCommand : replyCommands) {
-                                    if (nextCommand != null) {
-                                        try {
-                                            System.out.println("Point-sending to game[" + gw.g.getId() + "] channel[" + ctx.channel().id() + "]: " + nextCommand);
-                                            ctx.channel().writeAndFlush(nextCommand + '\n');
-                                        } catch (Exception e) {
-                                            System.out.println("[WARN] Channel point-sending failed (" + nextCommand + ") " + e);
-                                        }
-                                    }
-                                }
-                            }
-                            catch (Exception e){
-                                System.out.println("Failed dispatching results. " + e);
-                            }
+                            MpHelpers.broadcastCommands(
+                                    MpHelpers.convertEffectsToCommands(resolution.getEffects()), // commands
+                                    ctx, // current user's channel context
+                                    gw.broadcastList() // current game's broadcast list
+                            );
                         }
                         catch (Exception e){
                             System.out.println("[WARN] Game resolution processing failed. " + e);
