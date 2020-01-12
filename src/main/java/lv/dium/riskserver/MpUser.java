@@ -6,9 +6,6 @@ public class MpUser extends Object {
     private String id;
     private boolean isAuthorized;
 
-    public MpUser() {
-        this(null, null, false);
-    }
     public MpUser(String username, String password) {
         this(username, password, false);
     }
