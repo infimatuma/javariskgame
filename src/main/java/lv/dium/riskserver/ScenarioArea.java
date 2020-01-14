@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
-public class GameScenarioArea {
+public class ScenarioArea {
     String x;
     String y;
     String str;

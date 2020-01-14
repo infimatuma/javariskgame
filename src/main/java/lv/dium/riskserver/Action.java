@@ -1,6 +1,8 @@
 package lv.dium.riskserver;
 
 
+import lv.dium.riskgame.GameEffect;
+
 import java.util.ArrayList;
 
 /* Action is a set of data broadcasted to all players as a result of new player action received by server

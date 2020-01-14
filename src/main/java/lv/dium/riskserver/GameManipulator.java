@@ -1,5 +1,10 @@
 package lv.dium.riskserver;
 
+import lv.dium.riskgame.GameActionValidator;
+import lv.dium.riskgame.GameArea;
+import lv.dium.riskgame.GameEffect;
+import lv.dium.riskgame.GameState;
+
 import java.util.ArrayList;
 
 public class GameManipulator {
@@ -36,8 +41,8 @@ public class GameManipulator {
                 try {
                     baseScenario.load();
 
-                    ArrayList<GameScenarioArea> scenarioAreas = baseScenario.getAreas();
-                    for (GameScenarioArea scenarioArea : scenarioAreas) {
+                    ArrayList<ScenarioArea> scenarioAreas = baseScenario.getAreas();
+                    for (ScenarioArea scenarioArea : scenarioAreas) {
                         if (scenarioArea != null) {
                             GameArea newArea = new GameArea(
                                     scenarioArea.getX(),
@@ -170,4 +175,7 @@ public class GameManipulator {
 
         return effects;
     }
+
+
+
 }

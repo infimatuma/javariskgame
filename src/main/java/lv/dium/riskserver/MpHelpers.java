@@ -14,60 +14,6 @@ public class MpHelpers {
     final static AttributeKey<MpUser> MP_USER_ATTRIBUTE_KEY = AttributeKey.valueOf("authorized_user");
     static final int maximumPlayersPerGame = 2;
 
-    /**
-     * Converts GameEffect-s into MpCommand-s.
-     * Null-safe.
-     *
-     * @param effects - effects to convert
-     * @return - list of commands to broadcast
-     */
-    public static ArrayList<MpCommand> convertEffectsToCommands(ArrayList<GameEffect> effects) {
-        ArrayList<MpCommand> commands = new ArrayList<>();
-
-        String lastCommandValue = null;
-        StringBuilder currentString = new StringBuilder();
-
-        try {
-            if (effects != null && effects.size() > 0) {
-                for (GameEffect gameEffect : effects) {
-                    String nextCommand = gameEffect.getCommandLine();
-                    String nextValue = gameEffect.getValues();
-
-                    System.out.println("Command [" + nextCommand + "] with body [" + nextValue + "]");
-
-                    try {
-                        if (nextCommand != null) {
-                            if (!nextCommand.equals(lastCommandValue)) {
-                                if (lastCommandValue != null) {
-                                    commands.add(new MpCommand(currentString.toString(), "all"));
-                                }
-
-                                currentString = new StringBuilder(nextCommand);
-                                lastCommandValue = nextCommand;
-                            }
-                        }
-                        currentString.append(nextValue);
-                    } catch (Exception e) {
-                        System.out.println("Command formatting in-loop error. " + e);
-                    }
-                }
-                try {
-                    if (currentString.length() > 0) {
-                        commands.add(new MpCommand(currentString.toString(), "all"));
-                    }
-                } catch (Exception e) {
-                    System.out.println("Command formatting later error. " + e);
-                }
-            } else {
-                commands.add(new MpCommand("=err", "self"));
-            }
-        } catch (Exception e) {
-            System.out.println("Failed formatting commands. " + e);
-        }
-
-        return commands;
-    }
-
     /** Send commands to clients
      *
      * @param mpCommands - commands to send

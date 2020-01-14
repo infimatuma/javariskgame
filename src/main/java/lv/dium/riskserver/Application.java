@@ -1,5 +1,6 @@
 package lv.dium.riskserver;
 
+import lv.dium.riskgame.GameEffect;
 import org.reflections.Reflections;
 
 public class Application {
@@ -13,6 +14,8 @@ public class Application {
 			RiskActionProcessors.addAction(findable.value(), cl.getSimpleName());
 			System.out.println("Wired: " + findable.value());
 		}
+
+		GameEffect.initCosmetics();
 
 		Thread t1 = new Thread(() -> {
 			try {

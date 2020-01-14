@@ -1,5 +1,8 @@
 package lv.dium.riskserver;
 
+import lv.dium.riskgame.GameEffect;
+import lv.dium.riskgame.GameState;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,9 +74,10 @@ public class ProcessorRecruit implements GameActionProcessor{
                 System.out.println("ERROR: ProcessorRecruit ask for all units to be allocated in one command!");
             }
             else{
+                effects.add(new GameEffect("rcrt"));
                 affectedAreas.forEach((Integer k, Integer v) ->{
                     Integer newStr = g.countAreaStr(k) + v;
-                    effects.add(new GameEffect("recruit", k, String.valueOf(newStr)));
+                    effects.add(new GameEffect("nstr", k, String.valueOf(newStr)));
                 });
                 System.out.println("Processed recruit");
             }

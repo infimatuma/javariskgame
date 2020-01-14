@@ -1,4 +1,7 @@
-package lv.dium.riskserver;
+package lv.dium.riskgame;
+
+import lv.dium.riskgame.GameState;
+import lv.dium.riskserver.Action;
 
 public class GameActionValidator {
 

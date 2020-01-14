@@ -3,6 +3,7 @@ package lv.dium.riskserver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
 import io.netty.channel.group.DefaultChannelGroup;
+import lv.dium.riskgame.GameState;
 
 public class GameWrapper {
     private DefaultChannelGroup channelGroup;

@@ -9,6 +9,7 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import lv.dium.riskgame.MpConvertor;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -146,7 +147,7 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                                     command,
                                     payload
                             );
-                            commandsToWrite = MpHelpers.convertEffectsToCommands(resolution.getEffects());
+                            commandsToWrite = MpConvertor.convertEffectsToCommands(resolution.getEffects());
                         } catch (Exception e) {
                             System.out.println("[WARN] Game resolution processing failed. " + e);
                         }

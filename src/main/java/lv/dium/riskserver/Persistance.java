@@ -1,5 +1,8 @@
 package lv.dium.riskserver;
 
+import lv.dium.riskgame.GameArea;
+import lv.dium.riskgame.GameState;
+
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.IntStream;

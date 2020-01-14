@@ -1,4 +1,4 @@
-package lv.dium.riskserver;
+package lv.dium.riskgame;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,6 @@
-package lv.dium.riskserver;
+package lv.dium.riskgame;
+
+import lv.dium.riskserver.GamePlayer;
 
 import java.util.ArrayList;
 import java.util.HashMap;

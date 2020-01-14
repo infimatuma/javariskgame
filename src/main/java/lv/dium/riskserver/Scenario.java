@@ -6,14 +6,14 @@ import java.util.stream.IntStream;
 
 public class Scenario extends Action {
 
-    private ArrayList<GameScenarioArea> areas;
+    private ArrayList<ScenarioArea> areas;
     public String name;
 
     public Scenario(String name) {
         this.name = name;
     }
 
-    public Scenario(String name, ArrayList<GameScenarioArea> areas) {
+    public Scenario(String name, ArrayList<ScenarioArea> areas) {
         this.areas = areas;
         this.name = name;
     }
@@ -27,7 +27,7 @@ public class Scenario extends Action {
 
             Iterator areasIterator = areas.iterator();
             while (areasIterator.hasNext()) {
-                GameScenarioArea currentArea = (GameScenarioArea) areasIterator.next();
+                ScenarioArea currentArea = (ScenarioArea) areasIterator.next();
                 currentArea.setScenario(this);
                 currentArea.save();
             }
@@ -51,7 +51,7 @@ public class Scenario extends Action {
             if(scenarioAreasCnt != null){
                 Number AreasSize = Integer.valueOf(scenarioAreasCnt);
                 IntStream.range(0, AreasSize.intValue()).forEach(i -> {
-                    GameScenarioArea nextArea = new GameScenarioArea();
+                    ScenarioArea nextArea = new ScenarioArea();
                     nextArea.setId(String.valueOf(i));
                     nextArea.setScenario(this);
                     nextArea.load();
@@ -80,7 +80,7 @@ public class Scenario extends Action {
         this.name = name;
     }
 
-    public ArrayList<GameScenarioArea> getAreas() {
+    public ArrayList<ScenarioArea> getAreas() {
         return areas;
     }
 }

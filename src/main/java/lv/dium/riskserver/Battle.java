@@ -1,5 +1,7 @@
 package lv.dium.riskserver;
 
+import lv.dium.riskgame.GameArea;
+
 import static java.lang.Integer.parseInt;
 
 public class Battle {

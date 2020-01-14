@@ -1,5 +1,8 @@
 package lv.dium.riskserver;
 
+import lv.dium.riskgame.GameEffect;
+import lv.dium.riskgame.GameState;
+
 import java.util.ArrayList;
 
 @RiskActionProcessor("a")
