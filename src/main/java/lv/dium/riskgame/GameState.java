@@ -9,22 +9,22 @@ import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class GameState {
-    private Integer id;
+    public Integer id;
 
-    private Integer maxPlayers = 2;
-    private String scenarioName;
+    public Integer maxPlayers = 2;
+    public String scenarioName;
 
-    private String currentPlayer = ""; // color
-    private Integer currentPlayerIndex = 0; // in-game-id
-    private String currentPhase = "";
+    public String currentPlayer = ""; // color
+    public Integer currentPlayerIndex = 0; // in-game-id
+    public String currentPhase = "";
 
-    private ArrayList<GameArea> areas = new ArrayList<>();
-    private ArrayList<GamePlayer> players = new ArrayList<>();
-    private Map<String, String> playerColor = new HashMap<>();
+    public ArrayList<GameArea> areas = new ArrayList<>();
+    public ArrayList<GamePlayer> players = new ArrayList<>();
+    public Map<String, String> playerColor = new HashMap<>();
 
-    private ArrayList<String> allColors;
+    public ArrayList<String> allColors;
 
-    private Integer unallocated_units = 0;
+    public Integer unallocated_units = 0;
 
     public ReentrantLock lock = new ReentrantLock();
 
