@@ -1,11 +1,15 @@
 package lv.dium.riskserver;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class GamePlayer {
     final String name;
     final String color;
     final Integer id;
 
-    public GamePlayer(String name, Integer id, String color){
+    @JsonCreator
+    public GamePlayer(@JsonProperty("name") String name, @JsonProperty("id") Integer id, @JsonProperty("color") String color){
         this.color = color;
         this.name = name;
         this.id = id;

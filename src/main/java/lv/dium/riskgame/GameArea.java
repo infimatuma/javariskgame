@@ -1,16 +1,20 @@
 package lv.dium.riskgame;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.ArrayList;
 
 public class GameArea {
-    String x;
-    String y;
-    Integer str;
-    Integer id;
-    String color;
-    ArrayList<Number> links = new ArrayList<>();
+    private String x;
+    private String y;
+    private Integer str;
+    private Integer id;
+    private String color;
+    private ArrayList<Number> links = new ArrayList<>();
 
-    public GameArea(String x, String y, Integer str, Integer id, String color, ArrayList<Number> links) {
+    @JsonCreator
+    public GameArea(@JsonProperty("x") String x, @JsonProperty("y") String y, @JsonProperty("str") Integer str, @JsonProperty("id") Integer id, @JsonProperty("color") String color, @JsonProperty("links") ArrayList<Number> links) {
         this.x = x;
         this.y = y;
         this.str = str;
@@ -63,11 +67,15 @@ public class GameArea {
         return links;
     }
 
-    public void setStr(int str) {
+    public void addStr(int addedValue) {
+        this.setStr(this.getStr() + addedValue);
+    }
+
+    public void setStr(Integer str) {
         this.str = str;
     }
 
-    public void addStr(int addedValue) {
-        this.setStr(this.getStr() + addedValue);
+    public void setLinks(ArrayList<Number> links) {
+        this.links = links;
     }
 }

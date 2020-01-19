@@ -1,5 +1,7 @@
 package lv.dium.riskserver;
 
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -10,6 +12,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lv.dium.riskgame.GameManipulator;
+import lv.dium.riskgame.GameState;
 import lv.dium.riskgame.MpConvertor;
 
 import java.net.InetAddress;

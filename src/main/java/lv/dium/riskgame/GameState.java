@@ -1,6 +1,8 @@
 package lv.dium.riskgame;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lv.dium.riskserver.GamePlayer;
 
 import java.util.ArrayList;
@@ -10,25 +12,53 @@ import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 @JsonIgnoreProperties(value = { "lock" })
+
 public class GameState {
-    public Integer id;
+    private Integer id;
 
-    public Integer maxPlayers = 2;
-    public String scenarioName;
+    private Integer maxPlayers = 2;
+    private String scenarioName;
 
-    public String currentPlayer = ""; // color
-    public Integer currentPlayerIndex = 0; // in-game-id
-    public String currentPhase = "";
+    private String currentPlayer = ""; // color
+    private Integer currentPlayerIndex = 0; // in-game-id
+    private String currentPhase = "";
 
-    public ArrayList<GameArea> areas = new ArrayList<>();
-    public ArrayList<GamePlayer> players = new ArrayList<>();
-    public Map<String, String> playerColor = new HashMap<>();
+    private ArrayList<GameArea> areas = new ArrayList<>();
+    private ArrayList<GamePlayer> players = new ArrayList<>();
+    private Map<String, String> playerColor = new HashMap<>();
 
-    public ArrayList<String> allColors;
+    private ArrayList<String> allColors;
 
-    public Integer unallocated_units = 0;
+    private Integer unallocated_units = 0;
 
     public ReentrantLock lock = new ReentrantLock();
+
+    @JsonCreator
+    public GameState(@JsonProperty("id") Integer id,
+                     @JsonProperty("maxPlayers") Integer maxPlayers,
+                     @JsonProperty("scenarioName") String scenarioName,
+                     @JsonProperty("currentPlayer") String currentPlayer,
+                     @JsonProperty("currentPlayerIndex") Integer currentPlayerIndex,
+                     @JsonProperty("currentPhase") String currentPhase,
+                     @JsonProperty("areas") ArrayList<GameArea> areas,
+                     @JsonProperty("players") ArrayList<GamePlayer> players,
+                     @JsonProperty("playerColor") Map<String, String> playerColor,
+                     @JsonProperty("allColors") ArrayList<String> allColors,
+                     @JsonProperty("unallocated_units") Integer unallocated_units
+                     )
+    {
+        this.id = id;
+        this.maxPlayers = maxPlayers;
+        this.scenarioName = scenarioName;
+        this.currentPlayer = currentPlayer;
+        this.currentPlayerIndex = currentPlayerIndex;
+        this.currentPhase = currentPhase;
+        this.areas = areas;
+        this.players = players;
+        this.playerColor = playerColor;
+        this.allColors = allColors;
+        this.unallocated_units = unallocated_units;
+    }
 
     public GameState() {
         // Set colors
