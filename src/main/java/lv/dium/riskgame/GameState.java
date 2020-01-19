@@ -1,5 +1,6 @@
 package lv.dium.riskgame;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lv.dium.riskserver.GamePlayer;
 
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
+@JsonIgnoreProperties(value = { "lock" })
 public class GameState {
     public Integer id;
 
