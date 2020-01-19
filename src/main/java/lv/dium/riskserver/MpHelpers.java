@@ -5,6 +5,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import lv.dium.riskgame.GameManipulator;
+
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 

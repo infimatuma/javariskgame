@@ -5,7 +5,7 @@ import lv.dium.riskgame.GameState;
 
 import java.util.ArrayList;
 
-@RiskActionProcessor("a")
+@RiskActionProcessor("attk")
 public class ProcessorAttack implements GameActionProcessor{
     private Integer targetAreaID;
     private Integer sourceAreaID;

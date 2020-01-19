@@ -49,6 +49,21 @@ public class MpConvertor {
     public static ArrayList<GameEffect> convertCommandToEffects(String command) {
         ArrayList<GameEffect> effects = new ArrayList<>();
 
+        String[] effectsArray = command.split(".");
+
+        for(String effectString: effectsArray) {
+            if(effectString.length()>4){
+                String action = effectString.substring(0,3);
+                Integer areaId = Integer.valueOf(effectString.substring(5,7));
+                String newValue = effectString.substring(3,5);
+
+                effects.add(new GameEffect(action, areaId, newValue));
+            }
+            else{
+                effects.add(new GameEffect(effectString));
+            }
+        }
+
         return effects;
     }
 }

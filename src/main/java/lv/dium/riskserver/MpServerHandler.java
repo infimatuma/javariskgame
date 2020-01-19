@@ -9,6 +9,7 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import lv.dium.riskgame.GameManipulator;
 import lv.dium.riskgame.MpConvertor;
 
 import java.net.InetAddress;
@@ -58,12 +59,22 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
 
             String command = null;
             String payload = "";
+            String longCommand = null;
+            String shortPayload = "";
+
             if (t.length() > 1) {
                 command = t.substring(1, 2);
                 if (t.length() > 2) {
                     payload = t.substring(2);
                 }
             }
+            if (t.length() > 4) {
+                longCommand = t.substring(1, 5);
+                if (t.length() > 5) {
+                    shortPayload = t.substring(5);
+                }
+            }
+
             // login command
             if (command != null && command.equals("l")) {
                 try {
@@ -144,8 +155,8 @@ public class MpServerHandler extends SimpleChannelInboundHandler<String> {
                             Action resolution = GameManipulator.handleAction(
                                     gw.g, // game state
                                     gw.g.findColorByUsername(authorizedUser.getUsername()), // current user
-                                    command,
-                                    payload
+                                    longCommand,
+                                    shortPayload
                             );
                             commandsToWrite = MpConvertor.convertEffectsToCommands(resolution.getEffects());
                         } catch (Exception e) {

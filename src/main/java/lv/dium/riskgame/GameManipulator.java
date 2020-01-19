@@ -1,9 +1,12 @@
-package lv.dium.riskserver;
+package lv.dium.riskgame;
 
-import lv.dium.riskgame.GameActionValidator;
-import lv.dium.riskgame.GameArea;
-import lv.dium.riskgame.GameEffect;
-import lv.dium.riskgame.GameState;
+import lv.dium.riskserver.Action;
+import lv.dium.riskserver.GameActionProcessor;
+import lv.dium.riskserver.JedisConnection;
+import lv.dium.riskserver.RiskActionProcessors;
+import lv.dium.riskserver.Scenario;
+import lv.dium.riskserver.ScenarioArea;
+import lv.dium.riskserver.WiredAction;
 
 import java.util.ArrayList;
 
@@ -122,21 +125,16 @@ public class GameManipulator {
         if (g.getId() != null && action != null) {
             /* should have id set now */
             /* lock the game before we load it */
+
             g.lock.lock();
             try {
-                /* handle actionMessage received by player here */
-
-                // No username-s should be used inside game - every area belongs to one of colors for better abstraction and less validation
-                //String actingColor = playerColor.get(user.getUsername());
-
                 resolution.setActingColor(actingColor);
 
                 if(GameActionValidator.validateAction(g, resolution)) {
-                    resolution.setEffects(GameManipulator.processAction(g, resolution));
+                    ArrayList<GameEffect> effects = GameManipulator.processAction(g, resolution);
+                    GameManipulator.applyEffects(g, effects);
+                    resolution.setEffects(effects);
                 }
-
-                /* Need to apply effect to GameState */
-                //applyEffects(resolution.getEffects());
 
             } catch (Exception e) {
                 System.out.println("Failed to process game[" + g.getId() + "] action[" + action + "]");
@@ -176,6 +174,21 @@ public class GameManipulator {
         return effects;
     }
 
+
+    public static void applyEffect(GameState g, GameEffect e){
+        String action = e.getAction();
+
+        if(action.equals("nstr")){
+            g.getAreas().get(e.getAreaID()).setStr(Integer.valueOf(e.getNewValue()));
+        }
+        else if(action.equals("nclr")){
+            g.getAreas().get(e.getAreaID()).setColor(e.getNewValue());
+        }
+    }
+
+    public static void applyEffects(GameState g, ArrayList<GameEffect> effects){
+        effects.forEach((GameEffect e) -> GameManipulator.applyEffect(g, e));
+    }
 
 
 }

@@ -26,6 +26,7 @@ public class GameEffect {
         cosmetics.put("nstr", false);  // new str
         cosmetics.put("nclr", false);  // new color
     }
+
     public Boolean Cosmetic(){
         if(cosmetics.size() < 1){ // plan-B, not thread safe
             initCosmetics();
@@ -38,9 +39,11 @@ public class GameEffect {
         }
         return isCosmetic;
     }
+
     public GameEffect(String action){
         this(action, 0, "");
     }
+
     public GameEffect(String action, Integer areaID, String newValue){
         this.action = action;
         this.areaID = areaID;
@@ -64,6 +67,7 @@ public class GameEffect {
 
         commandLine = command;
     }
+
     public GameEffect(String commandLine, String values){
         this.commandLine = commandLine;
         this.values = values;

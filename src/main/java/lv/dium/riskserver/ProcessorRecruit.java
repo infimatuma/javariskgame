@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-@RiskActionProcessor("r")
+@RiskActionProcessor("rcrt")
 public class ProcessorRecruit implements GameActionProcessor{
     private Map<Integer, Integer> affectedAreas = new HashMap<>();
     private Integer assignedUnits = 0;

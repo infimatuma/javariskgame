@@ -1,7 +1,8 @@
 package lv.dium.riskgame;
 
-import lv.dium.riskgame.GameState;
 import lv.dium.riskserver.Action;
+
+import java.util.ArrayList;
 
 public class GameActionValidator {
 
@@ -39,17 +40,31 @@ public class GameActionValidator {
             System.out.println("Wrong action player: " + testedAction.getActingColor() + " != " + currentPlayerColor);
             isOk = false;
         }
-        else if(testedAction.getAction().equals("a")){
+        else if(testedAction.getAction().equals("attk")){
             // validate attack permissions
             if(!currentPhase.equals("attack")){
                 System.out.println("Wrong currentPhase (need attack): " + currentPhase);
                 isOk = false;
             }
         }
-        else if(testedAction.getAction().equals("r")){
+        else if(testedAction.getAction().equals("rcrt")){
             // validate recruit permissions
             if(!currentPhase.equals("recruit")){
                 System.out.println("Wrong currentPhase (need recruit): " + currentPhase);
+                isOk = false;
+            }
+        }
+        else if(testedAction.getAction().equals("rnfc")){
+            // validate recruit permissions
+            if(!currentPhase.equals("reinforce")){
+                System.out.println("Wrong currentPhase (need reinforce): " + currentPhase);
+                isOk = false;
+            }
+        }
+        else if(testedAction.getAction().equals("swch")){
+            // validate recruit permissions
+            if(currentPhase.equals("recruit") && g.countUnallocated_units() > 0){
+                System.out.println("Not all units allocated in phase " + currentPhase);
                 isOk = false;
             }
         }
@@ -57,5 +72,38 @@ public class GameActionValidator {
         System.out.println("Action validation: " + String.valueOf(isOk));
 
         return isOk;
+    }
+
+    public ArrayList<GameValidAction> listValidActions(GameState g){
+        String currentPhase = g.getCurrentPhase();
+        Integer currentPlayerIndex = g.getCurrentPlayerIndex();
+
+        ArrayList<GameValidAction> validActions = new ArrayList<>();
+
+        if(currentPhase.equals("setup")){
+            validActions.add(new GameValidAction("swch", currentPlayerIndex, g.findColorByIndex(currentPlayerIndex)));
+        }
+        switch (currentPhase) {
+            case "recruit":
+                if(g.countUnallocated_units() > 0) {
+                    validActions.add(new GameValidAction("rcrt", currentPlayerIndex, g.findColorByIndex(currentPlayerIndex)));
+                }
+                else{
+                    validActions.add(new GameValidAction("swch", currentPlayerIndex, g.findColorByIndex(currentPlayerIndex)));
+                }
+                break;
+
+            case "attack":
+                validActions.add(new GameValidAction("attk", currentPlayerIndex, g.findColorByIndex(currentPlayerIndex)));
+                validActions.add(new GameValidAction("swch", currentPlayerIndex, g.findColorByIndex(currentPlayerIndex)));
+                break;
+
+            case "reinforce":
+                validActions.add(new GameValidAction("rnfc", currentPlayerIndex, g.findColorByIndex(currentPlayerIndex)));
+                validActions.add(new GameValidAction("swch", currentPlayerIndex, g.findColorByIndex(currentPlayerIndex)));
+                break;
+        }
+
+        return validActions;
     }
 }
